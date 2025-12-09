@@ -44,4 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   }
+
+  // Prevent disabled links from navigating
+  document.querySelectorAll('a.disabled').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+    });
+  });
 });
