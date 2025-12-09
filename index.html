@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Minghui Liu</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="profile">
+      <img src="images/mliu.jpg" alt="Profile portrait" class="profile__photo" />
+      <div>
+        <h1 class="profile__name">Minghui Liu</h1>
+        <p class="profile__title">PhD Student · Computer Science · University of Maryland, College Park</p>
+        <p class="profile__contact"><a href="mailto:minghui@umd.edu">minghui [at] umd.edu</a> </p>
+      </div>
+    </div>
+    <p class="profile__intro">
+        I'm a PhD student in the <a href="https://cs.umd.edu/">Computer Science department</a> of <a href="https://umd.edu/">University of Maryland, College Park</a>. 
+        I'm very fortunate to be advised by <a href="http://furong-huang.com/">Prof. Furong Huang</a> and work on AI & Machine Learning as a member of <a href="https://umiacs.umd.edu/">UMIACS</a>.
+        I received my bachelor’s degree in Computer Science from <a href="https://trincoll.edu/">Trinity College</a>.
+    </p>
+    <p class="profile__links">
+      <a href="data/mliu-cv.pdf">CV</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://scholar.google.com/citations?user=UKAsIsUAAAAJ&hl=en">Google Scholar</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://github.com/minghui-liu/">Github</a>
+      <span aria-hidden="true">·</span>
+      <a href="https://twitter.com/minghuiliu95">Twitter</a>
+    </p>
+  </header>
+
+  <main>
+    <section class="block" id="interests">
+      <h2>Research Interests</h2>
+      <ul class="pill-list">
+        <li>Machine Learning</li>
+        <li>Artificial Intelligence</li>
+        <li>LLM Reasoning</li>
+        <li>Efficient LLM</li>
+      </ul>
+    </section>
+
+    <section class="block" id="news">
+      <div class="block__header">
+        <h2>News & Updates</h2>
+        <button class="btn-ghost" data-toggle="news">Collapse</button>
+      </div>
+      <ul class="timeline" data-section="news">
+        <li>
+          <span class="timeline__date">Dec 2025</span>
+          <span class="timeline__text"><a href="https://">Hold Onto That Thought</a> to appear in NeurIPS 2025 Efficient Reasoning Workshop.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="block" id="publications">
+      <div class="block__header">
+        <h2>Publications</h2>
+        <button class="btn-ghost" data-toggle="pubs">Collapse</button>
+      </div>
+      <div class="filter-bar" aria-label="Filter publications by tag">
+        <span class="filter-bar__label">Filter:</span>
+        <div class="filter-bar__buttons">
+          <button class="filter-btn is-active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="reasoning">Reasoning</button>
+          <button class="filter-btn" data-filter="efficiency">Efficiency</button>
+          <button class="filter-btn" data-filter="cv">Computer Vision</button>
+          <button class="filter-btn" data-filter="multimodal">Multimodal</button>
+        </div>
+      </div>
+      <div class="pub-list" data-section="pubs">
+        <article class="pub-item" data-tags="reasoning">
+          <img class="pub-thumb" src="images/ladders.png" alt="Thumbnail for Ladders of Thought" />
+          <div class="pub-body">
+            <p class="pub-title">Ladders of Thought: A Self-Evolving Curriculum of Progressively Simplified Reasoning Traces</p>
+            <p class="pub-meta"><strong>Minghui Liu</strong>, Thomas Magelinski, Dehao Yuan, Qi Yu, Furong Huang</p>
+            <p class="pub-meta"><em>Preprint under peer review at ICLR 2026</em></p>
+            <div class="pub-links">
+              <a href="https://">Project</a>
+              <a href="data/ladders_of_thought_preprint.pdf">Paper</a>
+              <a href="https://">Code</a>
+            </div>
+            <ul class="tag-list" aria-label="Tags">
+              <li class="tag">LLM Reasoning</li>
+            </ul>
+          </div>
+        </article>
+        <article class="pub-item" data-tags="reasoning,multimodal">
+          <img class="pub-thumb" src="images/morse.png" alt="Thumbnail for MORSE-500" />
+          <div class="pub-body">
+            <p class="pub-title">MORSE-500: A Programmatically Controllable Video Benchmark to Stress-Test Multimodal Reasoning</p>
+            <p class="pub-meta">Zikui Cai, Andrew Wang, Anirudh Satheesh, Ankit Nakhawa, Hyunwoo Jae, Keenan Powell, <strong>Minghui Liu</strong>, Neel Jay, Sungbin Oh, Xiyao Wang, Yongyuan Liang, Tom Goldstein, Furong Huang</p>
+            <p class="pub-meta"><em>arXiv</em>, 2025</p>
+            <div class="pub-links">
+              <a href="https://morse-500.github.io">Project</a>
+              <a href="https://arxiv.org/abs/2506.05523">Paper</a>
+              <a href="https://github.com/morse-benchmark/morse-500">Code</a>
+              <a href="https://huggingface.co/datasets/video-reasoning/morse-500">Dataset</a>
+            </div>
+            <ul class="tag-list" aria-label="Tags">
+              <li class="tag">Multimodal Reasoning</li>
+            </ul>
+          </div>
+        </article>
+        <article class="pub-item" data-tags="efficiency,reasoning">
+          <img class="pub-thumb" src="images/holdonto.png" alt="Thumbnail for Hold Onto That Thought" />
+          <div class="pub-body">
+            <p class="pub-title">Hold Onto That Thought: Assessing KV Cache Compression On Reasoning</p>
+            <p class="pub-meta"><strong>Minghui Liu</strong>, Tahseen Rabbani, Aadi Palnitkar, Kyle Rui Sang, Hyunwoo Jae, Dixi Yao, Shayan Shabihi, Fuheng Zhao, Tian Li, Ce Zhang, Kunpeng Zhang, Furong Huang</p>
+            <p class="pub-meta"><em>Preprint under peer review at ICLR 2026; NeurIPS Efficient Reasoning Workshop</em>, 2025</p>
+            <div class="pub-links">
+              <a href="https://">Project</a>
+              <a href="data/hold_onto_that_thought_preprint.pdf">Paper</a>
+              <a href="data/hold_onto_that_thought_neurips_25_poster.pdf">Poster</a>
+              <a href="https://">Code</a>
+            </div>
+            <ul class="tag-list" aria-label="Tags">
+              <li class="tag">Efficient LLM</li>
+            </ul>
+          </div>
+        </article>
+        <article class="pub-item" data-tags="cv">
+          <img class="pub-thumb" src="images/veckm_flow.png" alt="Thumbnail for Learning Normal Flow" />
+          <div class="pub-body">
+            <p class="pub-title">Learning Normal Flow Directly From Events</p>
+            <p class="pub-meta">Dehao Yuan, Levi Burner, Jiayi Wu, <strong>Minghui Liu</strong>, Jingxi Chen, Yiannis Aloimonos, Cornelia Fermüller</p>
+            <p class="pub-meta"><em>ICCV</em>, 2025</p>
+            <div class="pub-links">
+              <a href="https://">Project</a>
+              <a href="https://arxiv.org/abs/2412.11284">Paper</a>
+              <a href="https://github.com/dhyuan99/VecKM_flow">Code</a>
+              <a href="https://dhyuan99.github.io/assets/demo.mov">Video Demo</a>
+            </div>
+            <ul class="tag-list" aria-label="Tags">
+              <li class="tag">Computer Vision</li>
+            </ul>
+          </div>
+        </article>
+        <article class="pub-item" data-tags="efficiency">
+          <img class="pub-thumb" src="images/hashevict.png" alt="Thumbnail for HashEvict" />
+          <div class="pub-body">
+            <p class="pub-title">HashEvict: A Pre-Attention KV Cache Eviction Strategy using Locality-Sensitive Hashing</p>
+            <p class="pub-meta"><strong>Minghui Liu*</strong>, Tahseen Rabbani*, Tony O'Halloran, Ananth Sankaralingam, Mary-Anne Hartley, Furong Huang, Cornelia Fermüller, Yiannis Aloimonos</p>
+            <p class="pub-meta"><em>arXiv</em>, 2024</p>
+            <div class="pub-links">
+              <a href="https://">Project</a>
+              <a href="https://arxiv.org/abs/2412.16187">Paper</a>
+              <a href="https://">Code</a>
+            </div>
+            <ul class="tag-list" aria-label="Tags">
+              <li class="tag">Efficient LLM</li>
+            </ul>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- <section class="block" id="service">
+      <h2>Service</h2>
+      <ul class="list-plain">
+        <li>Program Committee: NeurIPS 2023–2025, ICML 2024</li>
+        <li>Reviewer: JMLR, TMLR</li>
+        <li>Organizer: Workshop on Trustworthy ML 2025</li>
+      </ul>
+    </section> -->
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Minghui Liu · Last updated Dec 2025</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
