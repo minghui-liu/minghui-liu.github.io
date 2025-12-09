@@ -9,16 +9,25 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("[data-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.getAttribute("data-toggle");
-      const target = document.querySelector(`[data-section="${key}"]`);
-      if (!target) return;
-      const isHidden = target.getAttribute("hidden") !== null;
-      if (isHidden) {
-        target.removeAttribute("hidden");
-        btn.textContent = "Collapse";
-      } else {
-        target.setAttribute("hidden", "hidden");
-        btn.textContent = "Expand";
-      }
+      const section = btn.closest("section");
+      const targets = section ? section.querySelectorAll(`[data-section="${key}"], .filter-bar`) : [];
+      
+      if (targets.length === 0) return;
+      
+      const firstTarget = Array.from(targets)[0];
+      const isHidden = firstTarget.getAttribute("hidden") !== null || firstTarget.style.display === "none";
+      
+      targets.forEach(target => {
+        if (isHidden) {
+          target.removeAttribute("hidden");
+          target.style.display = "";
+        } else {
+          target.setAttribute("hidden", "hidden");
+          target.style.display = "none";
+        }
+      });
+      
+      btn.textContent = isHidden ? "Collapse" : "Expand";
     });
   });
 
