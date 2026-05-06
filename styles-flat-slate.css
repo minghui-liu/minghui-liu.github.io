@@ -1,0 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap");
+@import url("styles.css");
+
+:root {
+  --bg: #f4f6f8;
+  --fg: #1a2431;
+  --muted: #576477;
+  --accent: #1768c8;
+  --card: transparent;
+  --border: #c9d4e0;
+  --font: "Plus Jakarta Sans", sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(circle at 10% -20%, rgba(123, 162, 209, 0.12), transparent 35%),
+    #f4f6f8;
+}
+
+main,
+.site-header,
+.site-footer {
+  max-width: 920px;
+}
+
+.site-header {
+  border: 0;
+  border-bottom: 2px solid #24364b;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 0 20px;
+}
+
+.block {
+  margin-top: 24px;
+  padding: 22px 0;
+  border: 0;
+  border-bottom: 1px solid #c5cfdb;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.block:last-of-type {
+  border-bottom: 0;
+}
+
+.profile__name {
+  font-size: clamp(30px, 5vw, 44px);
+  letter-spacing: -0.02em;
+}
+
+.pub-item,
+.timeline li {
+  border: 1px solid #c2cedb;
+  border-radius: 8px;
+  background: #ebf1f7;
+}
+
+.filter-btn,
+.btn-ghost,
+.pub-links a,
+.theme-switcher select {
+  border-radius: 8px;
+  background: #e8eef5;
+}
+
+.filter-btn.is-active {
+  background: #d8e8fa;
+  border-color: #94b9e2;
+}
+
+.pill-list li,
+.tag {
+  border-radius: 8px;
+  background: #e2ebf6;
+  border-color: #bdcde0;
+  color: #21476e;
+}

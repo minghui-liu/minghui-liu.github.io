@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap");
+@import url("styles.css");
+
+:root {
+  --bg: #f6f8fb;
+  --fg: #141c27;
+  --muted: #5d6877;
+  --accent: #1f7aff;
+  --card: #ffffff;
+  --border: #dbe2ec;
+  --font: "Outfit", sans-serif;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(31, 122, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 100% 90%, rgba(14, 178, 173, 0.1), transparent 35%),
+    var(--bg);
+  line-height: 1.7;
+}
+
+main,
+.site-header,
+.site-footer {
+  max-width: 860px;
+}
+
+.site-header,
+.block {
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 18px 30px rgba(16, 30, 48, 0.06);
+}
+
+.profile__name {
+  letter-spacing: -0.02em;
+  font-size: clamp(32px, 5vw, 46px);
+}
+
+.block h2 {
+  font-size: 24px;
+  letter-spacing: -0.01em;
+}
+
+.pub-item,
+.timeline li {
+  border-radius: 18px;
+  background: #fdfefe;
+}
+
+.filter-btn,
+.btn-ghost,
+.pub-links a,
+.theme-switcher select {
+  border-radius: 999px;
+  padding: 7px 12px;
+}
+
+.filter-btn.is-active {
+  background: #deebff;
+  border-color: #b8d1ff;
+}
+
+.pill-list li,
+.tag {
+  border-radius: 999px;
+}
+
+@media (max-width: 720px) {
+  .site-header,
+  .block {
+    border-radius: 18px;
+  }
+}

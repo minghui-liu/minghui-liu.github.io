@@ -1,0 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;700&display=swap");
+@import url("styles.css");
+
+:root {
+  --bg: #f8f3e9;
+  --fg: #27211d;
+  --muted: #5f5852;
+  --accent: #8f3f2c;
+  --card: #fffaf0;
+  --border: #d9c8ad;
+  --font: "Manrope", sans-serif;
+}
+
+body {
+  background:
+    linear-gradient(180deg, rgba(248, 243, 233, 0.85), rgba(248, 243, 233, 1)),
+    repeating-linear-gradient(90deg, rgba(100, 80, 60, 0.04), rgba(100, 80, 60, 0.04) 1px, transparent 1px, transparent 28px),
+    var(--bg);
+}
+
+.profile__name,
+.block h2 {
+  font-family: "Fraunces", serif;
+  letter-spacing: 0.01em;
+}
+
+.site-header,
+.block {
+  border-radius: 4px;
+  border-width: 2px;
+  box-shadow: 7px 7px 0 rgba(50, 40, 30, 0.2);
+}
+
+.site-header {
+  transform: rotate(-0.3deg);
+}
+
+.block:nth-of-type(2n) {
+  transform: rotate(0.2deg);
+}
+
+.block:nth-of-type(2n + 1) {
+  transform: rotate(-0.15deg);
+}
+
+.pill-list li,
+.tag {
+  background: #f0e2ca;
+  border-color: #cfb78f;
+  color: #4a3722;
+}
+
+.pub-links a,
+.filter-btn,
+.btn-ghost,
+.theme-switcher select {
+  border-width: 2px;
+  border-radius: 4px;
+  background: #fff6e6;
+}
+
+.filter-btn.is-active {
+  background: #f5d7b8;
+  border-color: #c88f5d;
+}
+
+.timeline li,
+.pub-item {
+  background: #fffdf7;
+  border-width: 2px;
+}
+
+@media (max-width: 720px) {
+  .site-header,
+  .block,
+  .block:nth-of-type(2n),
+  .block:nth-of-type(2n + 1) {
+    transform: none;
+  }
+}
