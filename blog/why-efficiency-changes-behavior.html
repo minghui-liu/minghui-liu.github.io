@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A preview post about efficiency constraints and model behavior." />
+  <title>Why Efficiency Changes Model Behavior · Minghui Liu</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <nav class="site-nav" aria-label="Primary navigation"><a href="../">Home</a><a href="./">Blog</a></nav>
+  </header>
+  <main class="post">
+    <article>
+      <header class="post-header">
+        <h1 class="post-title">Why Efficiency Changes Model Behavior</h1>
+        <p class="post-meta"><time datetime="2026-07-10">July 10, 2026</time> · 3 min read <span class="draft-label">Preview</span></p>
+        <p class="post-summary">Some early intuitions about why inference constraints should be treated as part of a model's behavior.</p>
+      </header>
+      <div class="post-content">
+        <p>Efficiency methods are often summarized by throughput and memory savings. Those metrics matter, but they can hide changes in what a model remembers and how it reasons.</p>
+        <h2>Constraints are interventions</h2>
+        <p>Compressing a cache or limiting a context does not affect every token equally. It changes the information available to later computation, so its behavioral impact should be measured directly.</p>
+        <h2>Measure where errors appear</h2>
+        <p>Aggregate accuracy can conceal whether failures cluster around long dependencies, revisions, or intermediate calculations. Breaking results down by task structure makes the tradeoff clearer.</p>
+        <h2>A broader definition of efficiency</h2>
+        <p>The useful system is not always the one that produces the most tokens per second. It is the one that reaches the needed reliability within a real resource budget.</p>
+      </div>
+      <a class="back-link" href="./">← All posts</a>
+    </article>
+  </main>
+  <footer class="site-footer"><p>&copy; <span id="year"></span> Minghui Liu</p></footer>
+  <script src="../script.js"></script>
+</body>
+</html>
