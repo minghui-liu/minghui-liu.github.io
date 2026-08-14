@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A principled way to make on-policy self-distillation smoother, more stable, and more effective for reasoning language models." />
+  <title>β-OPSD: Deriving with Policy Optimization, Training with Self-Distillation · Minghui Liu</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="post-shell">
+    <header class="page-header">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="./" aria-current="page">Blog</a>
+      </nav>
+      <div class="post-header">
+        <h1 class="post-title">β-OPSD: Deriving with Policy Optimization, Training with Self-Distillation</h1>
+        <p class="post-meta"><time datetime="2026-08-14">August 14, 2026</time> · 8 min read</p>
+        <p class="post-summary">A principled way to make on-policy self-distillation smoother, more stable, and more effective for reasoning language models.</p>
+      </div>
+    </header>
+
+    <main class="post">
+      <article>
+        <div class="post-content">
+          <blockquote class="tldr"><p><strong>TL;DR.</strong> Vanilla on-policy self-distillation (OPSD) is exactly one point, \(\beta=1\), in a broader family of KL-regularized policy-optimization objectives. This observation lets us replace direct teacher imitation with a controllable path from the student’s reference policy to a privileged teacher. We derive that path using reinforcement learning, realize it efficiently by interpolating token logits, and use return-to-go credit assignment to train at the sequence level. Across Qwen3 models from 1.7B to 8B parameters, <strong>β-OPSD improves the average math-reasoning score over vanilla OPSD at every model scale</strong>.</p></blockquote>
+
+          <figure class="post-figure post-figure--wide">
+            <img src="../images/beta-opsd-overview.svg" alt="Three-stage overview of Beta-OPSD: reinterpret OPSD as policy optimization, derive a path of optimal targets, and train through efficient self-distillation." />
+            <figcaption>β-OPSD derives a controllable target with policy optimization, then reaches it with efficient self-distillation.</figcaption>
+          </figure>
+
+          <h2>Why can self-distillation be brittle?</h2>
+          <p>On-policy self-distillation is an appealing recipe for improving reasoning models. A student generates its own solution, while a teacher—given privileged information available only during training, such as a reference solution—provides token-level supervision along that student-generated trajectory.</p>
+          <p>This combines two useful properties:</p>
+          <ol>
+            <li><strong>The data are on-policy.</strong> The teacher responds to the states the student actually visits.</li>
+            <li><strong>The supervision is dense.</strong> The model receives token-level guidance rather than only a final binary reward.</li>
+          </ol>
+          <p>But standard OPSD asks the student to imitate the teacher directly. When the student and teacher distributions are far apart, that target may be too aggressive. In practice, this can make training sensitive and require considerable engineering.</p>
+          <p>Our starting question is simple:</p>
+          <blockquote><p>Must the privileged teacher always be the only principled target?</p></blockquote>
+          <p>The answer is no. Direct teacher matching is a special case of a larger policy-optimization family—and exposing that family gives us a natural control knob.</p>
+
+          <h2>Vanilla OPSD is policy optimization at \(\beta=1\)</h2>
+          <p>Let</p>
+          <ul>
+            <li>\(\pi_\theta(y\mid x)\) be the student policy,</li>
+            <li>\(p_T(y\mid x,c)\) be the privileged teacher, which also observes training-only context \(c\), and</li>
+            <li>\(\pi_{\mathrm{ref}}(y\mid x)\) be a reference policy.</li>
+          </ul>
+          <p>Consider the standard KL-regularized policy-optimization objective</p>
+          <div class="math-display">
+            \[
+            \max_\theta\;
+            \mathbb{E}_{y\sim\pi_\theta(\cdot\mid x)}[R(y;x,c)]
+            -\beta D_{\mathrm{KL}}\!\left(
+            \pi_\theta(\cdot\mid x)\,\|\,\pi_{\mathrm{ref}}(\cdot\mid x)
+            \right),
+            \]
+          </div>
+          <p>where \(\beta&gt;0\) controls how strongly the updated policy stays anchored to the reference. Now define the reward as a teacher-to-reference log ratio:</p>
+          <div class="math-display">
+            \[
+            R(y;x,c)=\log\frac{p_T(y\mid x,c)}{\pi_{\mathrm{ref}}(y\mid x)}.
+            \]
+          </div>
+          <p>Substituting this reward gives the β-OPSD objective</p>
+          <div class="math-display">
+            \[
+            J_\beta(\theta)=
+            \mathbb{E}_{y\sim\pi_\theta}
+            \left[
+            \log\frac{p_T(y\mid x,c)}{\pi_{\mathrm{ref}}(y\mid x)}
+            \right]
+            -\beta D_{\mathrm{KL}}(\pi_\theta\|\pi_{\mathrm{ref}}).
+            \]
+          </div>
+          <p>At \(\beta=1\), the reference-policy terms cancel:</p>
+          <div class="math-display">
+            \[
+            J_1(\theta)=
+            -D_{\mathrm{KL}}\!\left(
+            \pi_\theta(\cdot\mid x)\,\|\,p_T(\cdot\mid x,c)
+            \right).
+            \]
+          </div>
+          <p>That is exactly the sequence-level reverse-KL objective underlying vanilla OPSD. In other words, OPSD is not separate from policy optimization: it is precisely the \(\beta=1\) member of this family.</p>
+          <p>This equivalence turns an implicit design choice into an explicit one. Instead of always pushing the student directly toward the teacher, \(\beta\) controls the balance between teacher guidance and proximity to the reference policy.</p>
+
+          <h2>A path of optimal policies</h2>
+          <p>The policy-optimization view does more than reinterpret OPSD. It tells us what the optimal target should be for every value of \(\beta\).</p>
+          <p>For fixed \(\beta\), the optimal sequence-level policy has the closed form</p>
+          <div class="math-display">
+            \[
+            \pi_\beta^\star(y\mid x,c)=
+            \frac{
+            \pi_{\mathrm{ref}}(y\mid x)^{1-1/\beta}
+            p_T(y\mid x,c)^{1/\beta}
+            }{Z_\beta(x,c)},
+            \]
+          </div>
+          <p>where \(Z_\beta(x,c)\) is a normalizing constant. This is a <strong>geometric interpolation</strong> between the reference policy and the privileged teacher.</p>
+          <p>For \(\beta\geq1\):</p>
+          <ul>
+            <li>\(\beta=1\) gives the teacher endpoint;</li>
+            <li>increasing \(\beta\) produces a more conservative target; and</li>
+            <li>\(\beta\rightarrow\infty\) approaches the reference policy.</li>
+          </ul>
+          <p>It is convenient to write the teacher weight as</p>
+          <div class="math-display">\[w=\frac{1}{\beta}\in[0,1].\]</div>
+          <p>Then \(w=0\) is the reference endpoint and \(w=1\) is the teacher endpoint. Rather than making an abrupt jump to direct teacher imitation, training can follow a smooth curriculum along this path.</p>
+
+          <h2>Derive with RL, train with distillation</h2>
+          <p>The closed-form result is a sequence-level distribution, but computing its normalizer would require summing over all possible completions. Directly optimizing the corresponding RL objective would also introduce costly rollouts, advantage estimation, and high-variance gradients.</p>
+          <p>We therefore use policy optimization to <strong>derive</strong> the destination, then return to distillation to <strong>reach</strong> it.</p>
+          <p>At token position \(t\), let \(h_t=(x,y_{&lt;t})\) be the current prefix. Let \(z_{\mathrm{ref}}(\cdot\mid h_t)\) and \(z_T(\cdot\mid h_t,c)\) denote the reference and teacher logits. We construct a local target by linearly interpolating those logits:</p>
+          <div class="math-display">
+            \[
+            \widetilde p_{\beta_k}(\cdot\mid h_t,c)
+            =\operatorname{softmax}\!\left(
+            (1-w_k)z_{\mathrm{ref}}(\cdot\mid h_t)
+            +w_k z_T(\cdot\mid h_t,c)
+            \right),
+            \qquad w_k=\frac{1}{\beta_k}.
+            \]
+          </div>
+          <p>Linear interpolation in logit space is exactly normalized geometric interpolation in probability space. Applying it at every prefix gives a tractable autoregressive approximation to the sequence-level optimum.</p>
+          <p>In our main experiments, the reference logits come from a stop-gradient copy of the current student, and the teacher weight follows a bounded linear schedule:</p>
+          <div class="math-display">
+            \[
+            w_k=w_{\mathrm{start}}+(w_{\mathrm{end}}-w_{\mathrm{start}})\frac{k}{K-1}.
+            \]
+          </div>
+          <p>We use \(w_{\mathrm{start}}=0.5\) and \(w_{\mathrm{end}}=0.8\). Early in training, the target remains relatively close to the student; later, privileged teacher guidance becomes stronger.</p>
+          <p>The key practical benefit is that this target is cheap. Once the two sets of logits are available, constructing it requires only a weighted sum and a softmax. No additional RL optimization loop is needed.</p>
+
+          <h2>Giving early tokens credit for future consequences</h2>
+          <p>A second issue arises from the sequence structure of language generation. An early token changes every prefix that follows it, so it can affect future student–target mismatch. A purely local token loss ignores this effect.</p>
+          <p>For a sampled trajectory \(y\sim\pi_\theta(\cdot\mid x)\), define the token-level mismatch</p>
+          <div class="math-display">
+            \[
+            \rho_t^{\beta_k}(y)=
+            \log\pi_\theta(y_t\mid x,y_{&lt;t})
+            -\log\widetilde p_{\beta_k}(y_t\mid x,y_{&lt;t},c).
+            \]
+          </div>
+          <p>β-OPSD assigns each token a discounted return-to-go:</p>
+          <div class="math-display">
+            \[
+            G_{t,\gamma}^{\beta_k}(y)=
+            \sum_{s=t}^{T}\gamma^{s-t}\rho_s^{\beta_k}(y),
+            \qquad \gamma\in[0,1].
+            \]
+          </div>
+          <p>The practical loss is</p>
+          <div class="math-display">
+            \[
+            \mathcal{L}_{\beta\text{-OPSD}}(\theta;y)=
+            \frac{1}{T}\sum_{t=1}^{T}
+            \operatorname{sg}\!\left(G_{t,\gamma}^{\beta_k}(y)\right)
+            \log\pi_\theta(y_t\mid x,y_{&lt;t}),
+            \]
+          </div>
+          <p>where \(\operatorname{sg}(\cdot)\) denotes stop-gradient. When \(\gamma=1\), the return-to-go estimator recovers the exact sequence-level gradient; in practice, we use \(\gamma=0.99\) to control its magnitude on long generations.</p>
+          <p>This makes the algorithm differ from vanilla OPSD in only two essential ways:</p>
+          <ol>
+            <li>Replace the fixed teacher target with a scheduled reference–teacher logit interpolant.</li>
+            <li>Replace local token weights with return-to-go weights that account for future mismatch.</li>
+          </ol>
+
+          <h2>Experimental results</h2>
+          <p>We train instruct-tuned <strong>Qwen3-1.7B, Qwen3-4B, and Qwen3-8B</strong> models on the mathematical-reasoning subset of OpenThoughts. The student sees only the problem; the privileged teacher also sees the ground-truth solution. We evaluate with avg@12 on AIME 2024, AIME 2025, and HMMT 2025.</p>
+          <p>At the 100-step checkpoint of a 200-step training schedule, β-OPSD achieves the best average score among the evaluated methods at every model scale:</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Model</th><th>Vanilla OPSD</th><th>β-OPSD</th><th>Absolute gain</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Qwen3-1.7B</td><td>31.02</td><td><strong>36.76</strong></td><td><strong>+5.74</strong></td></tr>
+                <tr><td>Qwen3-4B</td><td>56.11</td><td><strong>57.87</strong></td><td><strong>+1.76</strong></td></tr>
+                <tr><td>Qwen3-8B</td><td>58.52</td><td><strong>60.18</strong></td><td><strong>+1.66</strong></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>The gain is largest for Qwen3-1.7B, where β-OPSD improves over vanilla OPSD by <strong>9.16 points on AIME 2024</strong>, <strong>5.27 points on AIME 2025</strong>, and <strong>2.78 points on HMMT 2025</strong>. This is consistent with the intuition that smoothing the target is especially valuable when the gap between student and teacher is large.</p>
+
+          <h3>What matters in the method?</h3>
+          <p>Controlled ablations on Qwen3-1.7B isolate both components.</p>
+          <p>With the same return-to-go estimator, replacing direct teacher distillation with the β-OPSD interpolant improves avg@12 by:</p>
+          <ul>
+            <li><strong>+6.03</strong> on AIME 2024,</li>
+            <li><strong>+5.30</strong> on AIME 2025, and</li>
+            <li><strong>+1.67</strong> on HMMT 2025.</li>
+          </ul>
+          <p>With the same interpolant target, replacing local token gradients with return-to-go credit assignment improves avg@12 by:</p>
+          <ul>
+            <li><strong>+1.12</strong> on AIME 2024,</li>
+            <li><strong>+5.55</strong> on AIME 2025, and</li>
+            <li><strong>+3.61</strong> on HMMT 2025.</li>
+          </ul>
+          <p>The interpolation schedule also matters. Among the schedules tested, increasing the teacher weight from \(0.5\) to \(0.8\) gives the strongest overall result, although other schedules can perform better on individual benchmarks. This opens a natural direction for adaptive schedules that respond to model scale, training progress, or the measured student–teacher gap.</p>
+
+          <h2>The broader lesson</h2>
+          <p>β-OPSD connects policy optimization and self-distillation in both directions:</p>
+          <div class="math-display">
+            \[
+            \text{OPSD}
+            \xrightarrow{\text{reinterpret}}
+            \text{KL-regularized policy optimization}
+            \xrightarrow{\text{solve}}
+            \text{optimal target path}
+            \xrightarrow{\text{approximate}}
+            \text{efficient self-distillation}.
+            \]
+          </div>
+          <p>The policy-optimization view supplies a principled family of targets. Distillation supplies a simple, low-variance way to train toward them. Return-to-go credit assignment keeps the practical token-level update aligned with the sequence-level objective.</p>
+          <p>The result is a small change to the OPSD training recipe with a useful conceptual payoff: the privileged teacher is no longer an all-or-nothing destination. It becomes one endpoint of a controllable path.</p>
+
+          <h2>Citation</h2>
+          <p>If you find this work useful, please cite:</p>
+          <pre><code class="language-bibtex">@article{xu2026betaopsd,
+  title   = {{$\beta$-OPSD: Deriving with Policy Optimization,
+             Training with Self-Distillation}},
+  author  = {Xu, Jiawei and Liu, Minghui and Zhang, Juzheng and
+             Goldstein, Tom and Huang, Furong},
+  year    = {2026},
+  journal = {arXiv preprint arXiv:2607.28582}
+}</code></pre>
+          <p><strong>Paper:</strong> <a href="https://arxiv.org/abs/2607.28582">arXiv:2607.28582</a> · <a href="https://umd-huang-lab.github.io/beta-opsd/">Project page</a> · <a href="https://github.com/umd-huang-lab/beta-opsd">Code</a></p>
+        </div>
+
+        <a class="back-link" href="./">← All posts</a>
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer"><p>&copy; <span id="year"></span> Minghui Liu</p></footer>
+  <script src="../script.js"></script>
+</body>
+</html>

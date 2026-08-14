@@ -859,6 +859,61 @@ main,
   text-decoration: none;
 }
 
+.pub-abstract {
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fafaf9;
+}
+
+.pub-abstract summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  color: var(--link);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.pub-abstract summary::-webkit-details-marker {
+  display: none;
+}
+
+.pub-abstract summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.pub-abstract[open] summary::after {
+  content: "−";
+}
+
+.pub-abstract summary:hover,
+.pub-abstract summary:focus-visible {
+  color: var(--link-hover);
+  background: #f3f3f1;
+}
+
+.pub-abstract[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.pub-abstract p {
+  margin: 0;
+  padding: 14px 16px 16px;
+  color: #48484b;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
 .site-nav {
   margin-bottom: 44px;
   font-size: 13px;
@@ -950,6 +1005,86 @@ main,
 .post-summary {
   font-size: 19px;
   line-height: 1.55;
+}
+
+.post-byline {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.post-byline p {
+  margin: 3px 0;
+}
+
+.post-byline strong {
+  color: var(--fg);
+}
+
+.post-figure {
+  margin: 34px 0;
+}
+
+.post-figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.post-figure figcaption {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.post-content .tldr {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--link);
+  border-radius: 10px;
+  background: #fafaf9;
+}
+
+.post-content .tldr p {
+  margin: 0;
+}
+
+.table-wrap {
+  margin: 24px 0;
+  overflow-x: auto;
+}
+
+.post-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.post-content th,
+.post-content td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.post-content th {
+  background: #fafaf9;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.post-content th:first-child,
+.post-content td:first-child {
+  text-align: left;
 }
 
 .post-content h2 {

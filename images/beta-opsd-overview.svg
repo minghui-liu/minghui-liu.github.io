@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="610" viewBox="0 0 1440 610">
+  <defs>
+    <linearGradient id="path" x1="0" x2="1">
+      <stop offset="0" stop-color="#3A78B4"/>
+      <stop offset="1" stop-color="#E57A44"/>
+    </linearGradient>
+    <linearGradient id="target" x1="0" x2="1">
+      <stop offset="0" stop-color="#EAF2FA"/>
+      <stop offset="1" stop-color="#FCEDE5"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#102A43" flood-opacity=".12"/>
+    </filter>
+    <marker id="arrowNavy" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#183B56"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7656A8"/>
+    </marker>
+    <style>
+      .sans{font-family:Inter,Arial,Helvetica,sans-serif}
+      .serif{font-family:Georgia,'Times New Roman',serif}
+      .panel{fill:#FCFDFE;stroke:#CAD7E3;stroke-width:2}
+      .title{font-size:24px;font-weight:700;fill:#102A43}
+      .kicker{font-size:16px;font-weight:700;letter-spacing:1.5px;fill:#60788D}
+      .body{font-size:18px;fill:#334E68}
+      .small{font-size:15px;fill:#60788D}
+      .math{font-family:Georgia,'Times New Roman',serif;font-style:italic;fill:#102A43}
+      .badge{font-size:16px;font-weight:700;fill:white}
+    </style>
+  </defs>
+
+  <rect width="1440" height="610" fill="white"/>
+  <text x="720" y="42" text-anchor="middle" class="sans title">β-OPSD: derive the target with policy optimization, train it with self-distillation</text>
+  <text x="720" y="70" text-anchor="middle" class="sans body">A controllable path from the reference policy to privileged teacher guidance</text>
+
+  <!-- Panel 1 -->
+  <rect x="32" y="98" width="416" height="438" rx="18" class="panel"/>
+  <circle cx="65" cy="132" r="17" fill="#183B56"/>
+  <text x="65" y="138" text-anchor="middle" class="sans badge">1</text>
+  <text x="92" y="139" class="sans kicker">POLICY-OPTIMIZATION VIEW</text>
+  <text x="62" y="182" class="sans title">Vanilla OPSD hides β = 1</text>
+
+  <rect x="64" y="211" width="352" height="84" rx="12" fill="#F1F5F9" stroke="#CAD7E3"/>
+  <text x="240" y="241" text-anchor="middle" class="serif body">maximize</text>
+  <text x="240" y="271" text-anchor="middle" class="math" font-size="21">E[R teacher/ref] − β KL(πθ || πref)</text>
+
+  <path d="M 241 313 L 241 350" stroke="#183B56" stroke-width="3" marker-end="url(#arrowNavy)"/>
+  <rect x="92" y="359" width="298" height="72" rx="36" fill="#FFF3D6" stroke="#D99A00" stroke-width="2"/>
+  <text x="241" y="388" text-anchor="middle" class="sans body" font-weight="700">β = 1  ⇒  vanilla OPSD</text>
+  <text x="241" y="414" text-anchor="middle" class="serif body">min KL(πθ || pT)</text>
+
+  <text x="241" y="474" text-anchor="middle" class="sans body" font-weight="700" fill="#183B56">Make β explicit and controllable</text>
+  <text x="241" y="501" text-anchor="middle" class="sans small">β controls how far the student moves</text>
+
+  <!-- Connector -->
+  <path d="M 461 317 L 486 317" stroke="#183B56" stroke-width="4" marker-end="url(#arrowNavy)"/>
+
+  <!-- Panel 2 -->
+  <rect x="496" y="98" width="448" height="438" rx="18" class="panel"/>
+  <circle cx="529" cy="132" r="17" fill="#183B56"/>
+  <text x="529" y="138" text-anchor="middle" class="sans badge">2</text>
+  <text x="556" y="139" class="sans kicker">CLOSED-FORM TARGET PATH</text>
+  <text x="720" y="182" text-anchor="middle" class="sans title">Each β selects an optimal target</text>
+
+  <rect x="542" y="210" width="356" height="61" rx="11" fill="url(#target)" stroke="#CAD7E3"/>
+  <text x="720" y="249" text-anchor="middle" class="math" font-size="24">π*β ∝ πref^(1−1/β) · pT^(1/β)</text>
+
+  <line x1="575" y1="345" x2="865" y2="345" stroke="url(#path)" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="575" cy="345" r="18" fill="#3A78B4" stroke="white" stroke-width="4" filter="url(#shadow)"/>
+  <circle cx="865" cy="345" r="18" fill="#E57A44" stroke="white" stroke-width="4" filter="url(#shadow)"/>
+  <circle cx="670" cy="345" r="14" fill="#7656A8" stroke="white" stroke-width="4" filter="url(#shadow)"/>
+  <circle cx="770" cy="345" r="14" fill="#C66A62" stroke="white" stroke-width="4" filter="url(#shadow)"/>
+
+  <text x="575" y="309" text-anchor="middle" class="sans body" font-weight="700" fill="#3A78B4">Reference</text>
+  <text x="865" y="309" text-anchor="middle" class="sans body" font-weight="700" fill="#E57A44">Teacher</text>
+  <text x="575" y="386" text-anchor="middle" class="sans small">β → ∞</text>
+  <text x="865" y="386" text-anchor="middle" class="sans small">β = 1</text>
+
+  <path d="M 611 421 C 670 398, 770 398, 829 421" fill="none" stroke="#7656A8" stroke-width="3" marker-end="url(#arrowPurple)"/>
+  <text x="720" y="455" text-anchor="middle" class="sans body" font-weight="700" fill="#7656A8">schedule w_k = 1/β_k</text>
+  <text x="720" y="482" text-anchor="middle" class="sans small">start conservative, increase teacher guidance</text>
+
+  <!-- Connector -->
+  <path d="M 957 317 L 982 317" stroke="#183B56" stroke-width="4" marker-end="url(#arrowNavy)"/>
+
+  <!-- Panel 3 -->
+  <rect x="992" y="98" width="416" height="438" rx="18" class="panel"/>
+  <circle cx="1025" cy="132" r="17" fill="#183B56"/>
+  <text x="1025" y="138" text-anchor="middle" class="sans badge">3</text>
+  <text x="1052" y="139" class="sans kicker">EFFICIENT TRAINING</text>
+  <text x="1200" y="182" text-anchor="middle" class="sans title">Distill the RL-derived solution</text>
+
+  <rect x="1027" y="211" width="346" height="70" rx="12" fill="#F5F0FA" stroke="#B9A7D2"/>
+  <text x="1200" y="240" text-anchor="middle" class="sans small">token-level logit interpolation</text>
+  <text x="1200" y="265" text-anchor="middle" class="math" font-size="20">z target,t = (1−w_k) z ref,t + w_k z T,t</text>
+
+  <g transform="translate(1038,321)">
+    <rect x="0" y="0" width="60" height="48" rx="8" fill="#EAF2FA" stroke="#3A78B4"/>
+    <rect x="74" y="0" width="60" height="48" rx="8" fill="#EAF2FA" stroke="#3A78B4"/>
+    <rect x="148" y="0" width="60" height="48" rx="8" fill="#EAF2FA" stroke="#3A78B4"/>
+    <rect x="222" y="0" width="60" height="48" rx="8" fill="#FCEDE5" stroke="#E57A44"/>
+    <rect x="296" y="0" width="60" height="48" rx="8" fill="#FCEDE5" stroke="#E57A44"/>
+    <text x="30" y="30" text-anchor="middle" class="sans body">y1</text>
+    <text x="104" y="30" text-anchor="middle" class="sans body">y2</text>
+    <text x="178" y="30" text-anchor="middle" class="sans body">y3</text>
+    <text x="252" y="30" text-anchor="middle" class="sans body">…</text>
+    <text x="326" y="30" text-anchor="middle" class="sans body">yT</text>
+    <path d="M 326 -12 C 275 -52, 85 -52, 30 -12" fill="none" stroke="#7656A8" stroke-width="3" marker-end="url(#arrowPurple)"/>
+    <text x="178" y="-34" text-anchor="middle" class="sans small" fill="#7656A8">return-to-go credit</text>
+  </g>
+
+  <rect x="1050" y="424" width="300" height="67" rx="33" fill="#E9F7EF" stroke="#39A56A" stroke-width="2"/>
+  <text x="1200" y="453" text-anchor="middle" class="sans body" font-weight="700" fill="#1D7045">Low-variance distillation</text>
+  <text x="1200" y="477" text-anchor="middle" class="sans small">no direct RL optimization</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="184" y="555" width="1072" height="39" rx="19.5" fill="#183B56"/>
+  <text x="720" y="581" text-anchor="middle" class="sans" font-size="18" font-weight="700" fill="white">β-OPSD keeps the efficiency of OPSD while adding principled control, smoother targets, and sequence-level credit</text>
+</svg>
