@@ -1025,6 +1025,125 @@ main,
   margin: 34px 0;
 }
 
+.post-figure--float-right {
+  float: right;
+  width: 50%;
+  margin: 0 0 24px 28px;
+}
+
+.clear-float {
+  clear: both;
+}
+
+.floating-toc {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 20;
+  color: var(--fg);
+}
+
+.floating-toc[open] {
+  width: min(300px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.13);
+  backdrop-filter: blur(16px);
+}
+
+.floating-toc summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  margin-left: auto;
+  padding: 9px 13px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--fg);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  list-style: none;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.09);
+  backdrop-filter: blur(16px);
+}
+
+.floating-toc summary::-webkit-details-marker {
+  display: none;
+}
+
+.floating-toc summary::before {
+  content: "☰";
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.floating-toc[open] summary {
+  width: auto;
+  margin: 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.floating-toc[open] summary::before {
+  content: "×";
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.floating-toc nav {
+  max-height: calc(100vh - 96px);
+  padding: 10px 10px 14px;
+  overflow-y: auto;
+}
+
+.post-content .floating-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: toc-item;
+}
+
+.post-content .floating-toc li {
+  counter-increment: toc-item;
+}
+
+.floating-toc a {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  color: #48484b;
+  font-size: 12px;
+  line-height: 1.35;
+  text-decoration: none;
+}
+
+.floating-toc a::before {
+  content: counter(toc-item) ".";
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.floating-toc a:hover,
+.floating-toc a:focus-visible {
+  background: #f3f3f1;
+  color: var(--fg);
+}
+
+.post-content [id] {
+  scroll-margin-top: 24px;
+}
+
 .post-figure img {
   display: block;
   width: 100%;
@@ -1111,6 +1230,27 @@ main,
 }
 
 @media (max-width: 720px) {
+  .floating-toc {
+    top: auto;
+    right: 14px;
+    bottom: 14px;
+  }
+
+  .floating-toc[open] {
+    width: min(320px, calc(100vw - 28px));
+    max-height: min(70vh, 560px);
+  }
+
+  .floating-toc nav {
+    max-height: calc(min(70vh, 560px) - 48px);
+  }
+
+  .post-figure--float-right {
+    float: none;
+    width: 100%;
+    margin: 34px 0;
+  }
+
   body {
     padding: 18px 14px 48px;
   }

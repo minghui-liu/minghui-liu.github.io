@@ -8,6 +8,9 @@
        hyphen-separated filename and never edit this template into a real post.
     2. Replace every REPLACE_WITH_* value and the sample article content.
     3. Use exactly one <h1>; section headings begin at <h2>, with <h3> nested below.
+       Give each top-level section a stable lowercase, hyphen-separated id. Keep
+       the floating table of contents for long posts, update every link to match
+       those ids, and remove the entire floating-toc block for short posts.
     4. Store assets according to their scope:
        - For a post with multiple figures or post-specific files, create
          blog/assets/your-post-slug/ and reference files from the post as
@@ -84,15 +87,38 @@
             <p><strong>TL;DR.</strong> State the central result or argument in two or three sentences.</p>
           </blockquote>
 
+          <!--
+            Optional floating table of contents for long posts. It is collapsed by
+            default, stays fixed on the right, and moves to the lower-right on mobile.
+            Include top-level <h2> sections in reading order. Every href must match
+            an existing heading id exactly. Remove this entire block for short posts.
+          -->
+          <details class="floating-toc">
+            <summary>Contents</summary>
+            <nav aria-label="Article contents">
+              <ol>
+                <li><a href="#section-heading">Section heading</a></li>
+                <li><a href="#lists">Lists</a></li>
+                <li><a href="#quotation">Quotation or emphasized claim</a></li>
+                <li><a href="#figure">Figure with caption</a></li>
+                <li><a href="#table">Table</a></li>
+                <li><a href="#mathematics">Mathematics</a></li>
+                <li><a href="#code">Code</a></li>
+                <li><a href="#references">References and citation</a></li>
+                <li><a href="#takeaway">Takeaway</a></li>
+              </ol>
+            </nav>
+          </details>
+
           <p>Opening paragraph: introduce the question, observation, or argument. Use <strong>strong emphasis</strong> sparingly, <em>italics</em> for terms or titles, and <a href="https://example.com/">descriptive link text</a> instead of a raw URL.</p>
 
-          <h2>Section heading</h2>
+          <h2 id="section-heading">Section heading</h2>
           <p>Develop the central idea with evidence, examples, and enough context for a reader outside the immediate project.</p>
 
-          <h3>Subsection heading</h3>
+          <h3 id="subsection-heading">Subsection heading</h3>
           <p>Use an <code>&lt;h3&gt;</code> only beneath an <code>&lt;h2&gt;</code>. Inline code, variable names, filenames, and commands belong in <code>&lt;code&gt;</code>.</p>
 
-          <h2>Lists</h2>
+          <h2 id="lists">Lists</h2>
           <p>Use an unordered list when sequence does not matter:</p>
           <ul>
             <li>First supporting point.</li>
@@ -107,12 +133,12 @@
             <li>Interpret the result.</li>
           </ol>
 
-          <h2>Quotation or emphasized claim</h2>
+          <h2 id="quotation">Quotation or emphasized claim</h2>
           <blockquote>
             <p>A normal blockquote highlights a quotation or an important claim. Include attribution in the surrounding prose when appropriate.</p>
           </blockquote>
 
-          <h2>Figure with caption</h2>
+          <h2 id="figure">Figure with caption</h2>
           <!--
             For an image-heavy post named your-post-slug.html, create:
 
@@ -120,13 +146,21 @@
 
             Then use a path such as the one below. Replace the src, alt text, and
             caption. For a shared site asset only, use ../images/filename.ext.
+
+            A normal full-width figure uses class="post-figure". To float a figure
+            on the right at half width and wrap subsequent text around it, use
+            class="post-figure post-figure--float-right" as demonstrated below.
+            Add class="clear-float" to the next heading that must start below it.
+            The figure automatically returns to full width on mobile.
           -->
-          <figure class="post-figure">
+          <figure class="post-figure post-figure--float-right">
             <img src="assets/REPLACE_WITH_POST_SLUG/REPLACE_WITH_IMAGE_FILENAME.svg" alt="REPLACE_WITH_A_CONCISE_DESCRIPTION_OF_THE_FIGURE" />
             <figcaption>REPLACE_WITH_A_CAPTION_THAT_EXPLAINS_THE_FIGURE.</figcaption>
           </figure>
+          <p>This paragraph wraps around the left side of the floated figure on desktop. Introduce what the reader should notice instead of relying on the caption alone.</p>
+          <p>Additional prose continues wrapping until it extends below the figure or reaches an element that clears the float.</p>
 
-          <h2>Table</h2>
+          <h2 id="table" class="clear-float">Table</h2>
           <p>Wrap tables so they remain horizontally scrollable on narrow screens. Always include column headings.</p>
           <div class="table-wrap">
             <table>
@@ -152,7 +186,7 @@
             </table>
           </div>
 
-          <h2>Mathematics</h2>
+          <h2 id="mathematics">Mathematics</h2>
           <p>Inline math stays within a sentence: the objective \(L(\theta)\) depends on parameters \(\theta\).</p>
 
           <p>Display important equations in a scrollable math block:</p>
@@ -164,7 +198,7 @@
 
           <p>Define every symbol and explain what the equation means after displaying it.</p>
 
-          <h2>Code</h2>
+          <h2 id="code">Code</h2>
           <p>Use a language class such as <code>language-python</code>, <code>language-javascript</code>, or <code>language-bibtex</code>. Escape HTML characters inside code as <code>&amp;lt;</code>, <code>&amp;gt;</code>, and <code>&amp;amp;</code>.</p>
           <pre><code class="language-python">def mean_loss(losses):
     """Return the mean of a non-empty loss sequence."""
@@ -172,7 +206,7 @@
         raise ValueError("losses must not be empty")
     return sum(losses) / len(losses)</code></pre>
 
-          <h2>References and citation</h2>
+          <h2 id="references">References and citation</h2>
           <p>Link to primary sources in context—for example, the <a href="https://arxiv.org/">paper on arXiv</a>, its <a href="https://github.com/">code repository</a>, or a project page.</p>
 
           <!-- Optional BibTeX block for a research post. -->
@@ -183,7 +217,7 @@
   journal = {arXiv preprint arXiv:0000.00000}
 }</code></pre>
 
-          <h2>Takeaway</h2>
+          <h2 id="takeaway">Takeaway</h2>
           <p>Close with the main conclusion, practical implications, and any open questions. Avoid introducing a major new argument in the final paragraph.</p>
         </div>
 
@@ -197,5 +231,8 @@
     <p>&copy; <span id="year"></span> Minghui Liu</p>
   </footer>
   <script src="../script.js"></script>
+  <!-- Keep GoatCounter in every published page so visits are recorded. -->
+  <script data-goatcounter="https://mliu.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
 </body>
 </html>
