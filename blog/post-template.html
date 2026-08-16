@@ -1,12 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!--
+    BLOG POST TEMPLATE — AUTHORING CHECKLIST
+
+    1. Copy this file to blog/your-post-slug.html. Use a short, lowercase,
+       hyphen-separated filename and never edit this template into a real post.
+    2. Replace every REPLACE_WITH_* value and the sample article content.
+    3. Use exactly one <h1>; section headings begin at <h2>, with <h3> nested below.
+    4. Store assets according to their scope:
+       - For a post with multiple figures or post-specific files, create
+         blog/assets/your-post-slug/ and reference files from the post as
+         assets/your-post-slug/descriptive-filename.ext.
+       - Use the shared ../images/ directory only for site-wide assets or an
+         isolated image that is reused outside the post.
+       Keep folder and file names lowercase and hyphen-separated. Provide useful
+       alt text. Prefer SVG for diagrams and PNG/JPEG/WebP for raster images.
+    5. Keep MathJax below when the post contains LaTeX. Inline math uses \(...\)
+       and display math uses \[...\]. Remove both MathJax <script> blocks only if
+       the post contains no math.
+    6. Estimate reading time from roughly 200–250 words per minute.
+    7. Add the finished post to blog/index.html using this structure:
+
+       <li class="post-card">
+         <time datetime="YYYY-MM-DD">MONTH DAY, YEAR</time>
+         <div>
+           <h2><a href="your-post-slug.html">POST TITLE</a></h2>
+           <p class="post-summary">ONE-SENTENCE SUMMARY.</p>
+         </div>
+       </li>
+
+    8. Before publishing, verify all links and images, check mobile overflow for
+       equations/tables/code, and update the homepage footer date if appropriate.
+  -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="REPLACE_WITH_A_SHORT_DESCRIPTION" />
   <title>REPLACE_WITH_POST_TITLE · Minghui Liu</title>
   <link rel="stylesheet" href="../styles.css" />
-  <!-- MathJax renders LaTeX written as \(...\) for inline math and \[...\] for display math. -->
+  <!-- MathJax: retain these scripts whenever the post contains LaTeX. -->
   <script>
     window.MathJax = {
       tex: {
@@ -19,50 +51,151 @@
 </head>
 <body>
   <div class="post-shell">
-  <header class="page-header">
-    <nav class="site-nav" aria-label="Primary navigation">
-      <a href="../">Home</a>
-      <a href="./" aria-current="page">Blog</a>
-    </nav>
-    <div class="post-header">
-      <h1 class="post-title">REPLACE_WITH_POST_TITLE</h1>
-      <p class="post-meta"><time datetime="YYYY-MM-DD">MONTH DAY, YEAR</time> · N min read</p>
-      <p class="post-summary">REPLACE_WITH_A_ONE_OR_TWO_SENTENCE_SUMMARY.</p>
-    </div>
-  </header>
+    <header class="page-header">
+      <!-- Keep these relative links unchanged for files located directly in blog/. -->
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="./" aria-current="page">Blog</a>
+      </nav>
 
-  <main class="post">
-    <article>
-      <div class="post-content">
-        <p>Opening paragraph: introduce the question, observation, or argument.</p>
+      <div class="post-header">
+        <h1 class="post-title">REPLACE_WITH_POST_TITLE</h1>
+        <p class="post-meta">
+          <!-- datetime must use ISO YYYY-MM-DD; visible text may be prose. -->
+          <time datetime="YYYY-MM-DD">MONTH DAY, YEAR</time> · N min read
+          <!-- Optional draft badge; remove it for a published post. -->
+          <span class="draft-label">Preview</span>
+        </p>
+        <p class="post-summary">REPLACE_WITH_A_ONE_OR_TWO_SENTENCE_SUMMARY.</p>
 
-        <h2>First section</h2>
-        <p>Develop the central idea with evidence, examples, or context.</p>
-
-        <h2>Second section</h2>
-        <p>Inline math example: the objective \(L(\theta)\) depends on the model parameters \(\theta\).</p>
-
-        <div class="math-display">
-          \[
-            L(\theta) = \frac{1}{N} \sum_{i=1}^{N} \ell(f_\theta(x_i), y_i)
-          \]
+        <!-- Optional byline. Remove this entire block for a single-author personal post. -->
+        <div class="post-byline">
+          <p><strong>AUTHOR ONE, AUTHOR TWO, AND AUTHOR THREE</strong></p>
+          <p>AFFILIATION · OPTIONAL CONTRIBUTION NOTE</p>
         </div>
+      </div>
+    </header>
 
-        <p>Code snippets use a language class for compatibility with syntax highlighters you may add later:</p>
-        <pre><code class="language-python">def mean_loss(losses):
+    <main class="post">
+      <article>
+        <div class="post-content">
+          <!-- Optional TL;DR callout. Remove if the summary above is sufficient. -->
+          <blockquote class="tldr">
+            <p><strong>TL;DR.</strong> State the central result or argument in two or three sentences.</p>
+          </blockquote>
+
+          <p>Opening paragraph: introduce the question, observation, or argument. Use <strong>strong emphasis</strong> sparingly, <em>italics</em> for terms or titles, and <a href="https://example.com/">descriptive link text</a> instead of a raw URL.</p>
+
+          <h2>Section heading</h2>
+          <p>Develop the central idea with evidence, examples, and enough context for a reader outside the immediate project.</p>
+
+          <h3>Subsection heading</h3>
+          <p>Use an <code>&lt;h3&gt;</code> only beneath an <code>&lt;h2&gt;</code>. Inline code, variable names, filenames, and commands belong in <code>&lt;code&gt;</code>.</p>
+
+          <h2>Lists</h2>
+          <p>Use an unordered list when sequence does not matter:</p>
+          <ul>
+            <li>First supporting point.</li>
+            <li>Second supporting point.</li>
+            <li>Third supporting point.</li>
+          </ul>
+
+          <p>Use an ordered list for a procedure, ranking, or progression:</p>
+          <ol>
+            <li>Define the setup.</li>
+            <li>Describe the method.</li>
+            <li>Interpret the result.</li>
+          </ol>
+
+          <h2>Quotation or emphasized claim</h2>
+          <blockquote>
+            <p>A normal blockquote highlights a quotation or an important claim. Include attribution in the surrounding prose when appropriate.</p>
+          </blockquote>
+
+          <h2>Figure with caption</h2>
+          <!--
+            For an image-heavy post named your-post-slug.html, create:
+
+              blog/assets/your-post-slug/
+
+            Then use a path such as the one below. Replace the src, alt text, and
+            caption. For a shared site asset only, use ../images/filename.ext.
+          -->
+          <figure class="post-figure">
+            <img src="assets/REPLACE_WITH_POST_SLUG/REPLACE_WITH_IMAGE_FILENAME.svg" alt="REPLACE_WITH_A_CONCISE_DESCRIPTION_OF_THE_FIGURE" />
+            <figcaption>REPLACE_WITH_A_CAPTION_THAT_EXPLAINS_THE_FIGURE.</figcaption>
+          </figure>
+
+          <h2>Table</h2>
+          <p>Wrap tables so they remain horizontally scrollable on narrow screens. Always include column headings.</p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Method</th>
+                  <th>Score</th>
+                  <th>Change</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Baseline</td>
+                  <td>72.4</td>
+                  <td>—</td>
+                </tr>
+                <tr>
+                  <td>Proposed method</td>
+                  <td><strong>78.9</strong></td>
+                  <td><strong>+6.5</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2>Mathematics</h2>
+          <p>Inline math stays within a sentence: the objective \(L(\theta)\) depends on parameters \(\theta\).</p>
+
+          <p>Display important equations in a scrollable math block:</p>
+          <div class="math-display">
+            \[
+              L(\theta) = \frac{1}{N} \sum_{i=1}^{N} \ell(f_\theta(x_i), y_i).
+            \]
+          </div>
+
+          <p>Define every symbol and explain what the equation means after displaying it.</p>
+
+          <h2>Code</h2>
+          <p>Use a language class such as <code>language-python</code>, <code>language-javascript</code>, or <code>language-bibtex</code>. Escape HTML characters inside code as <code>&amp;lt;</code>, <code>&amp;gt;</code>, and <code>&amp;amp;</code>.</p>
+          <pre><code class="language-python">def mean_loss(losses):
     """Return the mean of a non-empty loss sequence."""
+    if not losses:
+        raise ValueError("losses must not be empty")
     return sum(losses) / len(losses)</code></pre>
 
-        <h2>Takeaway</h2>
-        <p>Close with the main conclusion and any open questions.</p>
-      </div>
+          <h2>References and citation</h2>
+          <p>Link to primary sources in context—for example, the <a href="https://arxiv.org/">paper on arXiv</a>, its <a href="https://github.com/">code repository</a>, or a project page.</p>
 
-      <a class="back-link" href="./">← All posts</a>
-    </article>
-  </main>
+          <!-- Optional BibTeX block for a research post. -->
+          <pre><code class="language-bibtex">@article{replace2026citationkey,
+  title   = {REPLACE WITH PAPER TITLE},
+  author  = {Family, Given and Family, Given},
+  year    = {2026},
+  journal = {arXiv preprint arXiv:0000.00000}
+}</code></pre>
+
+          <h2>Takeaway</h2>
+          <p>Close with the main conclusion, practical implications, and any open questions. Avoid introducing a major new argument in the final paragraph.</p>
+        </div>
+
+        <!-- Keep this as the final link in every post. -->
+        <a class="back-link" href="./">← All posts</a>
+      </article>
+    </main>
   </div>
 
-  <footer class="site-footer"><p>&copy; <span id="year"></span> Minghui Liu</p></footer>
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Minghui Liu</p>
+  </footer>
   <script src="../script.js"></script>
 </body>
 </html>

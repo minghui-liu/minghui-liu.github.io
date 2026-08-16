@@ -36,7 +36,7 @@
           <blockquote class="tldr"><p><strong>TL;DR.</strong> Vanilla on-policy self-distillation (OPSD) is exactly one point, \(\beta=1\), in a broader family of KL-regularized policy-optimization objectives. This observation lets us replace direct teacher imitation with a controllable path from the student’s reference policy to a privileged teacher. We derive that path using reinforcement learning, realize it efficiently by interpolating token logits, and use return-to-go credit assignment to train at the sequence level. Across Qwen3 models from 1.7B to 8B parameters, <strong>β-OPSD improves the average math-reasoning score over vanilla OPSD at every model scale</strong>.</p></blockquote>
 
           <figure class="post-figure post-figure--wide">
-            <img src="../images/beta-opsd-overview.svg" alt="Three-stage overview of Beta-OPSD: reinterpret OPSD as policy optimization, derive a path of optimal targets, and train through efficient self-distillation." />
+            <img src="assets/beta-opsd/beta-opsd-overview.svg" alt="Three-stage overview of Beta-OPSD: reinterpret OPSD as policy optimization, derive a path of optimal targets, and train through efficient self-distillation." />
             <figcaption>β-OPSD derives a controllable target with policy optimization, then reaches it with efficient self-distillation.</figcaption>
           </figure>
 
