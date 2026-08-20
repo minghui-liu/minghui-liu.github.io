@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A comprehensive researcher’s guide to OPSD failures on hard reasoning: evidence, mechanisms, fixes, evaluation, open problems, and new research directions." />
+  <title>When a Model’s Wiser Self Becomes a Bad Teacher · Minghui Liu</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="post-shell">
+    <header class="page-header">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="./" aria-current="page">Blog</a>
+      </nav>
+      <div class="post-header">
+        <h1 class="post-title">When a Model’s Wiser Self Becomes a Bad Teacher</h1>
+        <p class="post-meta"><time datetime="2026-08-19">August 19, 2026</time> · 24 min read <span class="draft-label">Preview</span></p>
+        <p class="post-summary">A researcher’s guide to why on-policy self-distillation can compress reasoning yet degrade strong thinking models, how proposed fixes relate, and which open problems matter next.</p>
+      </div>
+    </header>
+
+    <main class="post">
+      <article>
+        <div class="post-content">
+          <blockquote class="tldr"><p><strong>TL;DR.</strong> On-policy self-distillation works best when it transfers behavior already latent in a model: a reusable rule, a local correction, or a shorter version of reasoning the model can already perform. It becomes unreliable when a privileged teacher is asked to create capability beyond the unprivileged student’s reach. On strong thinking models, direct imitation can suppress uncertainty, branching, verification, and backtracking—the very behaviors that make long-budget reasoning work.</p></blockquote>
+
+          <details class="floating-toc">
+            <summary>Contents</summary>
+            <nav aria-label="Article contents">
+              <ol>
+                <li><a href="#terminology">Terminology and scope</a></li>
+                <li><a href="#seductive-idea">The seductive idea</a></li>
+                <li><a href="#timeline">How the literature evolved</a></li>
+                <li><a href="#empirical-puzzle">Why the evidence looks contradictory</a></li>
+                <li><a href="#four-gaps">Four gaps hidden inside OPSD</a></li>
+                <li><a href="#compression-correction">Compression versus correction</a></li>
+                <li><a href="#strong-models">Why stronger models are vulnerable</a></li>
+                <li><a href="#fixes">What the fixes teach us</a></li>
+                <li><a href="#evaluation">How OPSD should be evaluated</a></li>
+                <li><a href="#open-problems">Open problems and research agenda</a></li>
+                <li><a href="#research-projects">Concrete research projects</a></li>
+                <li><a href="#decision-framework">A practical decision framework</a></li>
+                <li><a href="#reading-list">Reading list</a></li>
+              </ol>
+            </nav>
+          </details>
+
+          <p>On-policy self-distillation has an irresistible premise: let a model learn from a wiser version of itself. The student attempts a problem with no help. The same model, acting as a teacher, sees privileged information—a correct answer, a full solution, environmental feedback, or a successful trajectory—and evaluates what the student should have done at every token.</p>
+          <p>For reinforcement learning, this sounds almost unfairly efficient. A verifiable reward might reveal only whether a 10,000-token solution succeeded. A privileged self-teacher can provide a dense distribution over alternatives at every step, without requiring a larger external model. Early results suggested that this signal could match reinforcement learning with a small fraction of its rollout budget.</p>
+          <p>Then the negative results arrived. Self-distillation shortened reasoning but sometimes reduced mathematical accuracy. It suppressed uncertainty and self-correction. It helped instruction models more reliably than thinking models. It improved short-budget performance while damaging long-budget reasoning. On incorrect rollouts, it often failed to correct the error at all.</p>
+          <blockquote><p>The paradox is that the teacher’s advantage—knowing where the reasoning must end—can make it a worse guide for learning how to get there.</p></blockquote>
+
+          <h2 id="terminology">Terminology and scope</h2>
+          <p>The names in this area are easy to blur together, and that confusion matters because the methods have different failure modes.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Method</th><th>Who generates the rollout?</th><th>Who supplies supervision?</th><th>Extra information?</th></tr></thead>
+              <tbody>
+                <tr><td>Supervised fine-tuning (SFT)</td><td>Teacher or dataset</td><td>Fixed target sequence</td><td>Usually no</td></tr>
+                <tr><td>Off-policy distillation</td><td>Teacher or static dataset</td><td>External teacher</td><td>Optional</td></tr>
+                <tr><td>On-policy distillation (OPD)</td><td>Student</td><td>Usually a stronger external teacher</td><td>Optional</td></tr>
+                <tr><td>On-policy self-distillation (OPSD)</td><td>Student</td><td>The same model under different conditioning</td><td>Usually privileged context</td></tr>
+                <tr><td>RLVR</td><td>Student</td><td>Verifier or environment reward</td><td>Outcome only</td></tr>
+                <tr><td>Hybrid OPSD–RL</td><td>Student</td><td>Privileged self-teacher plus reward</td><td>Both dense and outcome signals</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>This post focuses on <strong>privileged-context OPSD</strong>: the student and teacher share a model family or parameters, but the teacher sees information unavailable to the student at deployment. Some papers call closely related objectives SDPO, self-OPD, privileged self-distillation, or hindsight self-distillation. I include general OPD work only where it diagnoses a mechanism that also applies to OPSD, such as unreliable supervision on student-generated prefixes or length-dependent objectives.</p>
+          <p>Two distinctions will recur throughout the post.</p>
+          <ul>
+            <li><strong>Shared versus instance-specific privilege.</strong> A stable system rule may be internalizable; the answer to one particular problem may not be.</li>
+            <li><strong>Capability acquisition versus policy shaping.</strong> Discovering a new solution is different from making an existing solution shorter, more likely, or more consistent.</li>
+          </ul>
+
+          <h2 id="seductive-idea">The seductive idea</h2>
+          <p>The modern OPSD recipe was formalized in <a href="https://arxiv.org/abs/2601.18734"><em>Self-Distilled Reasoner</em></a>. Let \(x\) be a question, \(r\) be privileged information, and \(y\) be a rollout generated by the student. The objective is approximately</p>
+          <div class="math-display">
+            \[
+            \mathcal L_{\mathrm{OPSD}}
+            =
+            \mathbb E_{y\sim\pi_\theta(\cdot\mid x)}
+            \sum_t
+            D\!\left(
+            \pi_T(\cdot\mid x,r,y_{&lt;t}),
+            \pi_\theta(\cdot\mid x,y_{&lt;t})
+            \right).
+            \]
+          </div>
+          <p>The student generates the states used for training, avoiding the exposure bias of learning only from fixed teacher traces. The teacher then supplies token-level supervision along those student-visited states. Because teacher and student can share the same underlying model, the method promises dense feedback without maintaining a much larger teacher.</p>
+          <p>That combination has genuine advantages:</p>
+          <ul>
+            <li><strong>On-policy states.</strong> The teacher reacts to the prefixes the student actually visits.</li>
+            <li><strong>Dense supervision.</strong> Every position can receive a learning signal rather than only a final scalar reward.</li>
+            <li><strong>No separate teacher architecture.</strong> Privileged context creates the capability gap.</li>
+            <li><strong>Flexible feedback.</strong> The privilege can be an answer, trace, critique, tool result, preference, or environmental observation.</li>
+          </ul>
+          <p>But the equation conceals a crucial asymmetry. The teacher solves \(p(y_t\mid x,r,y_{&lt;t})\), while the deployed student must solve \(p(y_t\mid x,y_{&lt;t})\). OPSD assumes that the difference between those two distributions is transferable knowledge. The recent literature shows that this assumption often fails.</p>
+
+          <h2 id="timeline">How the literature evolved</h2>
+          <p>The OPSD literature moved unusually quickly from an efficiency story to a failure-analysis story. The chronology is useful because later papers are often not contradicting the original result; they are changing the model regime, rollout budget, type of privilege, or definition of success.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Period</th><th>Question</th><th>Representative result</th></tr></thead>
+              <tbody>
+                <tr><td>January 2026</td><td>Can one model teach itself from a privileged solution?</td><td><em>Self-Distilled Reasoner</em> reports highly token-efficient mathematical post-training.</td></tr>
+                <tr><td>March–April</td><td>Why can the same recipe shorten reasoning but reduce accuracy?</td><td>Epistemic-verbalization suppression, sampled-token fragility, and privileged-information leakage emerge as early explanations.</td></tr>
+                <tr><td>May–June</td><td>Which tokens and trajectories contain useful signal?</td><td>Work on compression versus correction, token routing, gradient alignment, teacher reliability, and prefix failure replaces uniform all-token imitation.</td></tr>
+                <tr><td>July</td><td>Why are thinking models especially vulnerable?</td><td>Fork suppression, thinking collapse, reference-only shortcuts, continual forgetting, and search-agent decoding collapse are documented.</td></tr>
+                <tr><td>August</td><td>Can better privilege avoid the failure?</td><td>U-OPSD uses internal consistency, LOPD learns latent privilege, and RP-OPSD identifies reasoning pivots for multilingual transfer.</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>A useful way to read this sequence is that the field progressively relaxed four assumptions: that a correct answer makes a good teacher; that every teacher token is reliable; that local token matching repairs global reasoning; and that denser feedback is inherently safer than sparse reward.</p>
+
+          <h2 id="empirical-puzzle">The empirical puzzle</h2>
+          <p>OPSD can improve instruction-tuned models, internalize shared rules, rapidly optimize narrow tasks, and make reasoning substantially shorter. Yet the same family of methods can degrade out-of-domain mathematics by large margins, reduce long-budget accuracy on thinking models, cause continual-learning forgetting, or collapse agentic search.</p>
+          <p>The contradiction becomes easier to understand when performance is treated as an interaction among four variables:</p>
+          <div class="math-display">
+            \[
+            \text{OPSD outcome}
+            = f(\text{model capability},\ \text{task difficulty},\ \text{reasoning regime},\ \text{teacher privilege}).
+            \]
+          </div>
+          <p>The strongest negative results cluster in one regime: a capable long-chain-of-thought model, a task requiring exploration and recovery, instance-specific privileged information, and a training objective that applies teacher matching across the entire trace.</p>
+          <p>Evaluation choices can hide this failure. Shorter reasoning may raise accuracy under a small token budget while lowering accuracy when the model is allowed to think longer. Pass@1 may improve while pass@\(k\) falls because the policy has lost diverse solution paths. In-domain performance may rise while out-of-domain performance falls because the model has learned a confident style rather than a transferable strategy.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Evidence status</th><th>What the literature currently supports</th></tr></thead>
+              <tbody>
+                <tr><td>Relatively strong</td><td>Uniform privileged-context distillation can harm long-budget thinking; correct-rollout compression is easier than failed-rollout correction; teacher context and loss implementation materially change outcomes.</td></tr>
+                <tr><td>Promising but incomplete</td><td>Selective token/span routing, reference anchoring, path-conditioned hindsight, and RL–OPSD hybrids often improve stability.</td></tr>
+                <tr><td>Still unsettled</td><td>Whether verbalized uncertainty is causal, how failure scales to frontier models, how to define semantic forks, and whether any diagnostic predicts success across domains.</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 id="four-gaps">Four gaps hidden inside OPSD</h2>
+
+          <h3>The information gap</h3>
+          <p>A teacher conditioned on the answer contains information the student will not possess at test time. <a href="https://arxiv.org/abs/2604.03128"><em>Self-Distilled RLVR</em></a> describes the resulting privileged-information leakage as an irreducible mutual-information gap. Changing Top-1 or Top-K targets can reduce how much of that signal leaks through, but cannot make inaccessible information accessible.</p>
+          <p><a href="https://arxiv.org/abs/2605.11182"><em>The Many Faces of On-Policy Distillation</em></a> sharpens the distinction. OPSD can work when privilege represents a shared latent rule, such as a system instruction or stable preference. It is less reliable when the privilege is different for every example. In that case, the student learns an aggregate of answer-conditioned teachers, not necessarily a policy that can infer any particular answer.</p>
+          <p><a href="https://arxiv.org/abs/2607.02234"><em>Purified OPSD</em></a> argues that the teacher signal is often dominated by a reference-induced component: patterns specific to seeing the solution. The question-conditioned, transferable component can be smaller, ignored, or actively opposed by the total update.</p>
+
+          <h3>The search gap</h3>
+          <p>The unprivileged model must search; the privileged teacher already knows where to go. At a difficult reasoning fork, the student may need to reconsider an assumption, split into cases, verify an intermediate result, or backtrack. To a teacher holding the solution, those moves can look like needless hesitation.</p>
+          <p><a href="https://arxiv.org/abs/2603.24472"><em>Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?</em></a> calls the behavioral symptom <em>epistemic-verbalization suppression</em>. Rich teacher context produces concise, confident traces but removes expressions such as “wait,” checking, uncertainty, and revision. The paper reports performance drops of up to 40% across Qwen3-8B, DeepSeek-Distill-Qwen-7B, and OLMo3-7B-Instruct.</p>
+          <p><a href="https://arxiv.org/abs/2607.05184"><em>Rethinking OPSD for Thinking Models</em></a> locates the problem at high-entropy <em>forking positions</em>. Privileged context flips the learning signal on reconsideration tokens, reducing verification, hedging, and backtracking. Across five Qwen3 and OLMo thinking models, the resulting long-budget degradation reaches 17% relative.</p>
+          <p><a href="https://arxiv.org/abs/2607.10805"><em>Diagnosing and Mitigating Thinking Collapse</em></a> traces the same pathology through gradients: destructive teacher pressure concentrates where student entropy and pointwise student–teacher divergence are high. Behavioral suppression, fork suppression, and thinking collapse are different views of the same search-policy failure.</p>
+
+          <h3>The path gap</h3>
+          <p>A correct final answer identifies the destination, not the missing path. If the student makes a wrong assumption early, the teacher is later asked to supervise prefixes it would never naturally visit. It may continue the broken path, abruptly switch strategies, or divide probability among incompatible recoveries.</p>
+          <p><a href="https://arxiv.org/abs/2603.25562"><em>Revisiting On-Policy Distillation</em></a> finds that teacher guidance becomes less reliable as long rollouts move away from familiar teacher prefixes. <a href="https://arxiv.org/abs/2606.08432"><em>Trajectory-Refined Distillation</em></a> calls the structural version <em>prefix failure</em>: dense local supervision creates a bimodal teacher mixture and fragmented gradients that token masking alone cannot repair.</p>
+          <p><a href="https://arxiv.org/abs/2606.15576"><em>Localizing Credit at the Divergence</em></a> makes the endpoint problem explicit. On tasks with terse answers, the privileged teacher can be silent exactly where intermediate path guidance matters. Its remedy is to condition on a successful peer rollout so the teacher sees a full alternative continuation, not merely the final answer.</p>
+
+          <h3>The optimization gap</h3>
+          <p>Even useful teacher information can be delivered through the wrong estimator or at the wrong positions. Vanilla objectives commonly treat every token as equally reliable, even though style markers, algebraic steps, and high-entropy forks play very different roles.</p>
+          <p>The literature identifies sampled-token bias, unreliable Top-K gradients, tokenizer mismatches, excessive KL on style tokens, length shortcuts, unstable moving teachers, and gradients spent on redundant positions. <a href="https://arxiv.org/abs/2605.13255"><em>Respecting Self-Uncertainty</em></a> gates supervision by teacher entropy. <a href="https://arxiv.org/abs/2605.21606"><em>When Are Teacher Tokens Reliable?</em></a> finds that trajectory position predicts teacher-token viability much better than local uncertainty alone. <a href="https://arxiv.org/abs/2605.10194"><em>TRACE</em></a> distills only critical spans instead of applying KL everywhere.</p>
+          <p><a href="https://arxiv.org/abs/2605.22263"><em>Direction-Adaptive Self-Distillation</em></a> reaches an even stronger conclusion: the desired update can change sign. Pulling toward the teacher helps low-entropy execution tokens, while pulling toward it can damage high-entropy exploratory tokens. Reversing all teacher pressure is also wrong because it corrupts routine execution.</p>
+
+          <h2 id="compression-correction">Compression is not correction</h2>
+          <p>The cleanest experiment in this literature comes from <a href="https://arxiv.org/abs/2605.06188"><em>OPSD Compresses What RLVR Teaches</em></a>. The authors train separately on correct and incorrect rollouts, isolating two possible roles for OPSD.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Training subset</th><th>Observed behavior</th><th>Interpretation</th></tr></thead>
+              <tbody>
+                <tr><td>Correct rollouts</td><td>Responses become substantially shorter while accuracy is approximately preserved</td><td>OPSD removes redundancy from an existing capability</td></tr>
+                <tr><td>Incorrect rollouts</td><td>Accuracy deteriorates</td><td>Privileged hindsight does not reliably supply the missing reasoning path</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <blockquote><p>Hindsight is good at recognizing unnecessary thought, but much less reliable at inventing the missing thought.</p></blockquote>
+          <p>This explains why successful reasoning-compression work does not contradict negative capability results. <a href="https://arxiv.org/abs/2603.05433"><em>On-Policy Self-Distillation for Reasoning Compression</em></a> demonstrates a genuine strength: models often contain overly long, even harmful reasoning that can be compacted. But shorter correct traces do not prove that OPSD has taught the model to solve previously inaccessible problems.</p>
+
+          <h2 id="strong-models">Why stronger models may be more vulnerable</h2>
+          <p>A weak instruction model has relatively little deliberative search to lose. If a problem is within reach, a privileged teacher may provide a useful, direct pattern. A strong thinking model already possesses a search procedure: branching, verification, hedging, backtracking, and long-budget recovery. Direct imitation does not merely insert information into that model; it changes this search policy.</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Regime</th><th>Likely OPSD behavior</th></tr></thead>
+              <tbody>
+                <tr><td>Weak model, easy task</td><td>Transfers an accessible solution pattern</td></tr>
+                <tr><td>Weak model, task beyond its reach</td><td>The self-teacher cannot generate a useful correction</td></tr>
+                <tr><td>Strong model, easy task</td><td>Compresses redundant reasoning</td></tr>
+                <tr><td>Strong model, hard task</td><td>Risks suppressing exploration and long-budget recovery</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>This resolves much of the apparent contradiction between the original results and later negative studies. OPSD is not monotonic in model strength. A stronger model may have more valuable test-time computation for privileged imitation to erase.</p>
+
+          <h2 id="fixes">What the fixes teach us</h2>
+          <h3>Preserve a trustworthy direction</h3>
+          <p><a href="https://arxiv.org/abs/2604.03128"><em>Self-Distilled RLVR</em></a> uses outcome correctness to decide update direction and self-distillation only to shape token-level magnitude. <a href="https://arxiv.org/abs/2607.18955"><em>H²SD</em></a> routes successful and failed trajectories differently. TRACE applies GRPO outside selected critical spans. These methods share a lesson: the privileged teacher should not be solely responsible for deciding whether an action was good.</p>
+
+          <h3>Protect uncertainty and exploration</h3>
+          <p>Entropy-aware methods down-weight uncertain teacher positions; direction-adaptive methods actively preserve high-entropy exploration. <a href="https://arxiv.org/abs/2607.02502"><em>DemoPSD</em></a> constructs a disagreement-controlled barycenter between student and teacher. Adaptive Dual-Perspective OPSD anchors high-risk epistemic tokens to the base policy.</p>
+
+          <h3>Remove reference-only information</h3>
+          <p>Purified OPSD subtracts a reference-only distribution to isolate question-dependent signal. <a href="https://arxiv.org/abs/2607.28582"><em>β-OPSD</em></a> makes the pull between the reference policy and privileged teacher explicit rather than fixing it implicitly. Both approaches reject the assumption that the full teacher distribution is an appropriate target.</p>
+
+          <h3>Supply an actual correction path</h3>
+          <p>Hindsight Self-Distillation uses a successful peer trajectory. Trajectory-Refined Distillation repairs problematic prefixes before imitation. <a href="https://arxiv.org/abs/2608.06296"><em>U-OPSD</em></a> creates pseudo-solutions through thresholded self-consistency and targets confidently wrong completions. Hard-task correction needs path-level evidence, not only knowledge of the endpoint.</p>
+
+          <h3>Improve the privilege itself</h3>
+          <p><a href="https://arxiv.org/abs/2605.30070"><em>A Predictive Law for OPSD</em></a> asks whether feedback creates a better self-teacher before training begins. <a href="https://arxiv.org/abs/2608.13040"><em>Latent OPSD</em></a> learns privileged context from retrieved experience rather than requiring a designer to prescribe the right artifact. <a href="https://arxiv.org/abs/2607.04428"><em>dOPSD</em></a> derives privilege from later stages of the model’s own decoding trajectory.</p>
+
+          <h2 id="beyond-math">The problem extends beyond mathematics</h2>
+          <p><a href="https://arxiv.org/abs/2607.01763"><em>Denser ≠ Better</em></a> studies continual post-training across mathematics, science, tool use, and coding. Dense self-distillation accelerates specialization but produces greater parameter drift, worse out-of-distribution behavior, and more forgetting than GRPO. Formatting artifacts can amplify through the self-reinforcing teacher–student loop.</p>
+          <p><a href="https://arxiv.org/abs/2607.17558"><em>Why Does Feedback-Augmented Self-Distillation Fail to Improve Retrieval-Interleaved Search Agents?</em></a> finds <em>decoding collapse</em>: trajectories look linguistically diverse but follow question-agnostic templates, making KL supervision uninformative. An evolving self-teacher and prompt inconsistencies further destabilize learning.</p>
+          <p>These failures share a pattern. OPSD is most fragile when success depends on adaptive interaction, long-horizon search, or information acquired during the trajectory rather than supplied before it.</p>
+
+          <h2 id="evaluation">How OPSD should be evaluated</h2>
+          <p>A surprising amount of disagreement in this literature comes from measurement. A method can be simultaneously better and worse depending on whether we ask about short-budget pass@1, long-budget pass@\(k\), response length, out-of-domain transfer, or the discovery of previously unsolved problems. A credible OPSD experiment should separate these axes.</p>
+
+          <h3>Measure the accuracy–compute curve, not one decoding point</h3>
+          <p>Thinking models are explicitly designed to trade test-time compute for performance. Report accuracy at several rollout budgets and plot the entire curve. If OPSD improves at 2,000 tokens but loses at 16,000, the likely result is compression plus reduced deliberation—not an unqualified capability gain.</p>
+
+          <h3>Report both concentration and coverage</h3>
+          <p>Pass@1 measures how much probability the policy places on its most typical behavior. Pass@(k) and discovery@(k) measure whether a successful path remains anywhere in its support. A method can increase pass@1 while decreasing pass@64 by concentrating on one brittle strategy. For hard tasks, both are necessary.</p>
+
+          <h3>Stratify by base-model solvability</h3>
+          <p>Every evaluation set should be partitioned using a large pre-training sampling budget:</p>
+          <ol>
+            <li><strong>Reliably solved:</strong> the base model succeeds often.</li>
+            <li><strong>Rarely solved:</strong> success exists but has low probability.</li>
+            <li><strong>Feedback-recoverable:</strong> the model succeeds after critique, tools, or a hint.</li>
+            <li><strong>Self-teacher-only:</strong> the privileged view succeeds but the plain view does not.</li>
+            <li><strong>Beyond self-teacher reach:</strong> neither view succeeds within budget.</li>
+          </ol>
+          <p>This partition reveals whether OPSD compresses familiar solutions, amplifies rare ones, teaches recovery, transfers privileged capability, or merely overfits impossible examples.</p>
+
+          <h3>Separate correct and incorrect training trajectories</h3>
+          <p>Mixing them can obscure opposite effects. Report the contribution of correct-only, incorrect-only, and mixed training. For failed trajectories, identify whether training changes the first consequential error, only the later wording, or neither.</p>
+
+          <h3>Measure reasoning health</h3>
+          <p>Useful diagnostics include entropy at semantically meaningful forks, successful recovery after an injected mistake, strategy diversity, calibration, epistemic-token density, repetition, truncation, and sensitivity to contradictory evidence. None is individually sufficient. In particular, counting words like “wait” should not be mistaken for measuring internal search.</p>
+
+          <h3>Test transfer and retention</h3>
+          <p>At minimum, include held-out problem families, harder difficulty levels, different answer formats, and delayed evaluation of pre-existing capabilities. For agents, change the tool schema, retrieval corpus, or environment dynamics. OPSD’s dense signal can produce rapid in-domain specialization that looks impressive before the corresponding loss of robustness becomes visible.</p>
+
+          <h3>Match compute and implementation details</h3>
+          <p>Comparisons should account for rollout tokens, teacher forward passes, verifier calls, batch size, sequence truncation, and hyperparameter search. Chat templates, thinking-mode switches, stop-gradient placement, KL clipping, and special-token masks can materially change the result. Given the method’s brittleness, these are part of the algorithm rather than incidental engineering.</p>
+
+          <h2 id="open-problems">Open problems and research agenda</h2>
+          <p>The next step is not simply to invent another KL weighting rule. The field needs better causal definitions, predictive theory, and evaluation protocols. The following gaps seem especially important.</p>
+
+          <h3>1. Is epistemic verbalization causal or merely visible?</h3>
+          <p>Multiple papers associate good reasoning with “wait,” hedging, verification, and backtracking. But visible language can play three different roles: it may implement search, report a latent search process, or merely correlate with a model family’s reasoning style. Protecting those tokens is valuable only if it preserves the underlying computation.</p>
+          <p>A decisive study would cross two interventions: preserve versus suppress the words, and preserve versus disrupt the associated hidden-state dynamics. If uncertainty words remain while recovery disappears, the words are not the mechanism. If hidden branching remains when the words are removed, token-based fork metrics are measuring narration rather than reasoning.</p>
+
+          <h3>2. What is a reasoning fork?</h3>
+          <p>Token entropy is not a semantic definition. High entropy can represent interchangeable phrasings; a low-entropy token can commit the model to an entirely different strategy. A stronger definition is counterfactual: a prefix is a fork when plausible continuations lead to meaningfully different future states or success probabilities.</p>
+          <p>Operationalizing this definition may require targeted rollouts, semantic clustering of continuations, value estimates, and causal interventions. A scalable fork detector would immediately improve token routing, process supervision, evaluation of search diversity, and the diagnosis of coverage collapse.</p>
+
+          <h3>3. Can we isolate transferable information?</h3>
+          <p>Purified OPSD subtracts a reference-only teacher; DemoPSD limits adoption where teacher and student disagree; β-OPSD interpolates with a reference policy. These are promising approximations to a deeper target: retain information about how to succeed while removing dependence on the instance-specific answer.</p>
+          <p>One possible formulation is an information bottleneck. Let (z) denote a learned teaching signal:</p>
+          <div class="math-display">
+            \[
+            \max_z I(z;\text{success}\mid x)
+            \quad\text{subject to}\quad
+            I(z;r\mid x)\leq\varepsilon.
+            \]
+          </div>
+          <p>The constraint prevents (z) from simply encoding the privileged answer (r); the objective rewards reusable information about success. The hard questions are how to estimate these quantities, how to preserve question–reference interactions that really are transferable, and how to detect subtle answer leakage in latent channels.</p>
+
+          <h3>4. Can token imitation be replaced by counterfactual credit?</h3>
+          <p>KL asks, “What would the teacher predict at this prefix?” The causal learning question is, “Which change here would increase eventual success?” These coincide only when teacher likelihood is calibrated to future outcome on the student’s state distribution.</p>
+          <p>A more direct target is a counterfactual advantage:</p>
+          <div class="math-display">
+            \[
+            A_t(a)=
+            P(\text{success}\mid y_{&lt;t},a)
+            -P(\text{success}\mid y_{&lt;t}).
+            \]
+          </div>
+          <p>The privileged teacher could propose candidate actions, while targeted rollouts, a value model, or an environment estimates their effects. This reframes the teacher as a proposal distribution rather than an oracle target and connects OPSD to process reward models, tree search, and causal credit assignment.</p>
+
+          <h3>5. How should trajectories be repaired?</h3>
+          <p>Once a prefix is globally inconsistent, local token matching may be too late. But trajectory repair raises its own design questions:</p>
+          <ul>
+            <li>How do we locate the first consequential error rather than the first textual difference?</li>
+            <li>Should training splice a successful suffix, restart at the divergence, or regenerate the full solution?</li>
+            <li>How do we keep the correction inside the student’s learnable support?</li>
+            <li>How should multiple valid derivations be represented?</li>
+            <li>What happens when no successful peer trajectory exists?</li>
+          </ul>
+          <p>The ideal object may be a <em>minimal causal edit</em>: the smallest intervention on a failed trajectory that reliably changes its outcome while preserving as much of the student’s own reasoning as possible.</p>
+
+          <h3>6. Can we predict OPSD before paying for training?</h3>
+          <p>Candidate diagnostics now include the initial student–teacher accuracy gap, gradient alignment with empirical success, teacher informativeness, entropy, disagreement, branch viability, and distance from teacher support. We do not know which survive changes in model family, task, privilege, loss, or scale.</p>
+          <p>A useful predictor should do more than issue a binary recommendation. It should select the training examples, teacher context, tokens or spans, KL direction, reference strength, and rollout type. Building such a predictor requires a multi-lab benchmark of failed and successful OPSD runs, including negative results and implementation metadata.</p>
+
+          <h3>7. What are the scaling laws?</h3>
+          <p>Most controlled evidence still centers on Qwen-derived models at modest scale, with some results on OLMo, DeepSeek distills, and Qwen3-32B. Several competing hypotheses are plausible:</p>
+          <ul>
+            <li>Scale helps because the self-teacher can use privilege more intelligently.</li>
+            <li>Scale hurts because stronger models possess richer exploratory policies to suppress.</li>
+            <li>Scale reduces leakage by learning reusable abstractions.</li>
+            <li>Scale increases leakage because the teacher can exploit answers through subtler shortcuts.</li>
+          </ul>
+          <p>Controlled scaling should hold data, privilege, rollout budget, and optimization constant while measuring both short- and long-budget behavior. Sparse mixture-of-experts models, latent-reasoning models, and frontier-scale systems remain largely uncharted.</p>
+
+          <h3>8. How should teacher and student co-evolve?</h3>
+          <p>A moving self-teacher creates a coupled dynamical system. EMA teachers help in some settings, but may only delay collapse in others. Theory is needed for stable fixed points, oscillation, self-reinforcing style loops, entropy collapse or inflation, and the effect of teacher update speed.</p>
+          <p>This question is inseparable from continual learning. Dense supervision can amplify fresh-task artifacts and accelerate forgetting. Possible stabilizers include frozen teacher phases, teacher ensembles, replay across old domains, layer-specific anchors, sparse parameter updates, and explicit behavioral-drift constraints.</p>
+
+          <h3>9. How does OPSD work when reasoning is hidden?</h3>
+          <p>Many diagnostics rely on visible chain-of-thought tokens. That will not transfer cleanly to latent reasoning, compressed scratchpads, recurrent internal computation, or models that do not expose reasoning. We need representation-level measures of branching, causal sensitivity, future-state diversity, and error recovery that do not depend on English markers.</p>
+          <p><a href="https://arxiv.org/abs/2608.06347"><em>RP-OPSD</em></a> offers one useful clue: compare teacher views with and without a reference to identify reasoning pivots rather than relying only on surface tokens. Extending this idea to hidden states could yield model- and language-agnostic routing.</p>
+
+          <h3>10. Can agentic OPSD assign credit to events rather than tokens?</h3>
+          <p>For tool-using agents, one bad query or premature stopping decision can determine the entire outcome. Uniform token KL dilutes that event-level structure. Future methods should separate credit for planning, tool selection, query formulation, observation interpretation, argument construction, and termination.</p>
+          <p>The teacher may also know future tool outputs when judging earlier actions, creating an especially severe hindsight asymmetry. Turn-level or event-level counterfactual supervision is likely more faithful than treating every language token as an equally meaningful action.</p>
+
+          <h2 id="research-projects">Concrete research projects</h2>
+          <p>Here are six projects that could turn the preceding gaps into falsifiable research.</p>
+
+          <h3>Project A: A causal benchmark for fork preservation</h3>
+          <p>Construct tasks with known branching structure, controlled dead ends, and multiple valid strategies. At every designed fork, estimate success under forced alternative continuations. Compare vanilla OPSD, unprivileged OPD, RLVR, DASD, DemoPSD, and AD-OPSD. The key outcome is not word frequency but whether training preserves branches with positive counterfactual value.</p>
+
+          <h3>Project B: Capability-conditioned routing</h3>
+          <p>Estimate each problem’s solvability regime using base pass@\(k\), self-consistency, feedback recovery, and privileged-teacher success. Route reliable successes to compression, rare successes to peer-trajectory distillation, recoverable failures to hindsight correction, and unreachable failures to exploration or an external teacher. Test whether this mixture dominates any single OPSD objective at equal compute.</p>
+
+          <h3>Project C: Transferable-information distillation</h3>
+          <p>Train a bottleneck to predict successful corrections from privileged context while adversarially preventing answer reconstruction. Compare it against reference-only subtraction, PMI targets, teacher–student barycenters, and ordinary KL. Evaluate both accuracy and the ability of probes to recover privileged answers from the teaching representation.</p>
+
+          <h3>Project D: Minimal causal trajectory editing</h3>
+          <p>Given a failed and successful rollout, search for the smallest prefix intervention that flips the result. Distill only around that intervention and compare with all-token OPSD, error-span annotation, and full trajectory replacement. This tests whether sparse causal correction is more efficient and less destructive than dense imitation.</p>
+
+          <h3>Project E: An OPSD model-selection benchmark</h3>
+          <p>Release a matrix of models, tasks, privilege types, losses, and training outcomes, including failures. Evaluate whether pre-training diagnostics predict the sign and magnitude of the eventual change. Such a benchmark could turn today’s post hoc explanations into a practical selection rule.</p>
+
+          <h3>Project F: Long-horizon agentic self-distillation</h3>
+          <p>Build deterministic replay environments in which the causal effect of each tool action can be recomputed. Compare token-, span-, turn-, and event-level distillation under controlled hindsight. Vary whether the teacher sees future observations to quantify how much privileged future information corrupts earlier-action supervision.</p>
+
+          <h3>What would count as real progress?</h3>
+          <p>A compelling next-generation method should satisfy more than one benchmark average. It should:</p>
+          <ul>
+            <li>improve both pass@1 and coverage on hard problems;</li>
+            <li>retain gains as test-time compute increases;</li>
+            <li>repair previously failed trajectories, not only compress correct ones;</li>
+            <li>generalize across problem families and model families;</li>
+            <li>preserve prior capabilities during continued training;</li>
+            <li>predict when it should abstain from distillation; and</li>
+            <li>provide evidence that its token or event updates are causally aligned with success.</li>
+          </ul>
+
+          <h2 id="decision-framework">A practical decision framework</h2>
+          <h3>Can the unprivileged model solve any instances?</h3>
+          <p>If pass@large-\(k\) is effectively zero, self-distillation may have no correct behavior to consolidate. Use stronger exploration, tools, search, an external teacher, or RLVR first.</p>
+
+          <h3>Does privilege encode a reusable rule?</h3>
+          <p>A shared instruction, preference, or skill is more plausibly internalizable than a different answer or full demonstration for every example.</p>
+
+          <h3>Does the teacher remain useful on student prefixes?</h3>
+          <p>Measure whether teacher likelihood differences distinguish successful from failed continuations. A correct reference does not make every teacher token causally useful.</p>
+
+          <h3>Does the task require branching and recovery?</h3>
+          <p>If so, monitor response entropy, pass@\(k\), long-budget scaling, self-correction frequency, epistemic-token density, fork rate, and out-of-domain performance. Short-budget pass@1 is not enough.</p>
+
+          <h3>Is the method learning capability or compression?</h3>
+          <p>Evaluate correct and incorrect rollouts separately; compare short and long token budgets; report in-domain and OOD tasks; and distinguish previously solved from previously unsolved problems.</p>
+
+          <p>A safer emerging pipeline is</p>
+          <div class="math-display">
+            \[
+            \boxed{\text{SFT} \;\longrightarrow\; \text{RLVR or search} \;\longrightarrow\; \text{selective OPSD}.}
+            \]
+          </div>
+          <p>RLVR or search discovers capability. Selective OPSD then consolidates, localizes, or compresses it.</p>
+
+          <h2 id="reading-list">Consolidated reading list</h2>
+          <h3>Foundations and surveys</h3>
+          <ol>
+            <li><a href="https://arxiv.org/abs/2601.18734">Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models</a>.</li>
+            <li><a href="https://arxiv.org/abs/2604.00626">A Survey of On-Policy Distillation for Large Language Models</a>.</li>
+            <li><a href="https://arxiv.org/abs/2606.22793">A Formula-Driven Survey and Research Agenda for On-Policy Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.11182">The Many Faces of On-Policy Distillation: Pitfalls, Mechanisms, and Fixes</a>.</li>
+          </ol>
+
+          <h3>Direct failures and diagnostics</h3>
+          <ol start="5">
+            <li><a href="https://arxiv.org/abs/2603.25562">Revisiting On-Policy Distillation: Empirical Failure Modes and Simple Fixes</a>.</li>
+            <li><a href="https://arxiv.org/abs/2603.24472">Why Does Self-Distillation (Sometimes) Degrade the Reasoning Capability of LLMs?</a></li>
+            <li><a href="https://arxiv.org/abs/2604.03128">Self-Distilled RLVR</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.06188">OPSD Compresses What RLVR Teaches</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.10194">TRACE: Distilling Where It Matters via Token-Routed Self On-Policy Alignment</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.10889">Unmasking On-Policy Distillation: Where It Helps, Where It Hurts, and Why</a>.</li>
+            <li><a href="https://arxiv.org/abs/2606.08432">Trajectory-Refined Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.01763">Denser ≠ Better: Limits of On-Policy Self-Distillation for Continual Post-Training</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.02234">Purified OPSD: On-Policy Self-Distillation Without Losing How to Think</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.05184">Rethinking On-Policy Self-Distillation for Thinking Models</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.10805">Diagnosing and Mitigating Thinking Collapse in On-Policy Self-Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.13399">Demystifying On-Policy Distillation: Roles, Pathologies, and Regulations</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.17558">Why Does Feedback-Augmented Self-Distillation Fail to Improve Retrieval-Interleaved Search Agents?</a></li>
+          </ol>
+
+          <h3>Token reliability, uncertainty, and exploration</h3>
+          <ol start="18">
+            <li><a href="https://arxiv.org/abs/2605.13255">Respecting Self-Uncertainty in On-Policy Self-Distillation for Efficient LLM Reasoning</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.21606">When Are Teacher Tokens Reliable? Position-Weighted On-Policy Self-Distillation for Reasoning</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.22263">Tailoring Teaching to Aptitude: Direction-Adaptive Self-Distillation for LLM Reasoning</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.02502">DemoPSD: Disagreement-Modulated Policy Self-Distillation</a>.</li>
+          </ol>
+
+          <h3>Path correction, hybrids, and alternative privilege</h3>
+          <ol start="22">
+            <li><a href="https://arxiv.org/abs/2606.15576">Localizing Credit at the Divergence: Path-Conditioned Self-Distillation for LLM Reasoning</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.18955">H²SD: Hybrid Hindsight Self-Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.28582">β-OPSD: Deriving with Policy Optimization, Training with Self-Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.30070">A Predictive Law for On-Policy Self-Distillation From World Feedback</a>.</li>
+            <li><a href="https://arxiv.org/abs/2607.04428">dOPSD: On-Policy Self-Distillation for Diffusion Language Models</a>.</li>
+            <li><a href="https://arxiv.org/abs/2608.06296">On-Policy Self-Distillation without Any Supervision</a>.</li>
+            <li><a href="https://arxiv.org/abs/2608.13040">Latent On-Policy Self-Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2608.06347">RP-OPSD: Reasoning-Pivot-Guided On-Policy Self-Distillation for Multilingual Reasoning Transfer</a>.</li>
+            <li><a href="https://arxiv.org/abs/2603.05433">On-Policy Self-Distillation for Reasoning Compression</a>.</li>
+            <li><a href="https://arxiv.org/abs/2604.08527">Demystifying OPD: Length Inflation and Stabilization Strategies for Large Language Models</a>.</li>
+          </ol>
+
+          <h3>Supporting theory, state-distribution, and optimization analyses</h3>
+          <ol start="32">
+            <li><a href="https://arxiv.org/abs/2604.13016">Rethinking On-Policy Distillation: Phenomenology, Mechanism, and Recipe</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.16826">A Unified Perspective for SFT, DAgger, Offline RL, and On-Policy Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.22731">Post-Training is About States, Not Tokens</a>.</li>
+            <li><a href="https://arxiv.org/abs/2605.09253">Cornerstones or Stumbling Blocks? Deciphering the Rock Tokens in On-Policy Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2606.07082">On the Geometry of On-Policy Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2606.13657">On the Sparsity and Geometry of On-Policy Distillation</a>.</li>
+            <li><a href="https://arxiv.org/abs/2606.30445">When Does Online Imitation Learning Help in LLM Post-Training?</a></li>
+            <li><a href="https://arxiv.org/abs/2606.30923">Behavior Cloning is Not All You Need: The Optimality of On-Policy Distillation for Noisy Expert Feedback</a>.</li>
+          </ol>
+
+          <h2 id="conclusion">The real lesson</h2>
+          <p>OPSD’s central mistake is not self-teaching. It is treating every difference between an informed teacher and an uninformed student as transferable knowledge.</p>
+          <p>Some differences encode a reusable insight. Others encode access to the answer, hindsight about the path, confidence the student has not earned, or a shortcut that exists only because the teacher already knows the destination. Dense token-level imitation does not distinguish them automatically.</p>
+          <p>The next generation of self-distillation methods must therefore ask a more selective question. Not “How can the student imitate its wiser self everywhere?” but:</p>
+          <blockquote><p>Where does the wiser self know something the student can actually learn—and where do the student’s uncertainty, exploration, and mistakes contain abilities worth preserving?</p></blockquote>
+          <p>The likely destination is not a universally better distillation loss. It is a routed learning system:</p>
+          <div class="math-display">
+            \[
+            \text{discover with search or RL}
+            \;\longrightarrow\;
+            \text{identify causal corrections}
+            \;\longrightarrow\;
+            \text{distill selectively}
+            \;\longrightarrow\;
+            \text{preserve exploration and prior capability}.
+            \]
+          </div>
+          <p>The deepest scientific challenge is teaching a model from hindsight without teaching it to behave as though it always has hindsight.</p>
+        </div>
+
+        <a class="back-link" href="./">← All posts</a>
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Minghui Liu</p>
+  </footer>
+  <script src="../script.js"></script>
+  <script data-goatcounter="https://mliu.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
