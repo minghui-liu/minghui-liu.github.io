@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Diffusion language models could give agent harnesses a useful interface for fast drafting, joint decisions, structured infilling, and continuously updated working memory." />
+  <title>Diffusion Language Models Might Have the Right Shape for Agents · Minghui Liu</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <style>
+    .shape-figure-scroll { overflow-x: auto; }
+    .shape-figure img { width: 100%; min-width: 660px; max-width: none; }
+    .shape-figure-scroll:focus-visible { outline: 2px solid #286950; outline-offset: 4px; }
+  </style>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <div class="post-shell">
+    <header class="page-header">
+      <nav class="site-nav" aria-label="Primary navigation">
+        <a href="../">Home</a>
+        <a href="./" aria-current="page">Blog</a>
+      </nav>
+
+      <div class="post-header">
+        <h1 class="post-title">Diffusion Language Models Might Have the Right Shape for Agents</h1>
+        <p class="post-meta"><time datetime="2026-09-27">September 27, 2026</time> · 10 min read</p>
+        <p class="post-summary">Diffusion language models could give agent harnesses a useful interface for fast drafting, joint decisions, structured infilling, and continuously updated working memory.</p>
+      </div>
+    </header>
+
+    <main class="post">
+      <article>
+        <div class="post-content">
+<details class="floating-toc">
+<summary>Contents</summary>
+<nav aria-label="Article contents">
+<ol>
+<li><a href="#diffusion-models-as-fast-draft-models">Diffusion models as fast draft models</a></li>
+<li><a href="#diffusion-models-as-jev-like-decision-models">Diffusion models as Jev-like decision models</a></li>
+<li><a href="#diffusion-models-as-structured-infillers">Diffusion models as structured infillers</a></li>
+<li><a href="#diffusion-models-as-continuous-context-updaters">Diffusion models as continuous context updaters</a></li>
+<li><a href="#a-different-way-to-think-about-the-agent-stack">A different way to think about the agent stack</a></li>
+<li><a href="#the-interesting-question-is-not-ar-vs-diffusion">The interesting question is not AR vs. diffusion</a></li>
+</ol>
+</nav>
+</details>
+
+<p>Alex Zhang recently wrote a nice post about the <a href="https://alexzhang13.github.io/blog/2026/shape/">"shape" of language models</a>. The basic argument is that we usually design the <strong>harness around the language model</strong>, rather than designing the model around the harness.</p>
+
+<p>Most language models have essentially the same shape:</p>
+
+<div class="math-display">\[
+\text{text prefix} \rightarrow \text{more text}
+\]</div>
+
+<p>This is an extremely general interface, which is probably why it has survived for so long. But an agent harness does much more than write text. It repeatedly asks questions like:</p>
+
+<ul>
+<li>Which action should I take?</li>
+<li>Should I call a tool or think longer?</li>
+<li>Which tool should I call?</li>
+<li>Did the previous action succeed?</li>
+<li>What information is missing from this object?</li>
+<li>Can I cheaply propose something for a stronger model to verify?</li>
+</ul>
+
+<p>Using an autoregressive LLM for all of these operations may be a bit like using a compiler every time we need an <code>if</code> statement.</p>
+
+<p>The recent release of <a href="https://docs.typesafe.ai/introduction/quickstart">Jev</a> makes this particularly visible. Jev takes a state and typed questions, returning choices, scores, or probabilities that software can consume directly. Restricting the output space makes the model much less general, but also potentially much faster and cheaper for the particular operations that appear constantly inside an agent loop.</p>
+
+<p>This made me wonder whether diffusion language models have another useful shape for agent harnesses: as a primitive inside the harness, even when an autoregressive model still handles the main reasoning.</p>
+
+<figure class="post-figure shape-figure">
+<div class="shape-figure-scroll" tabindex="0" role="region" aria-label="An agent harness routes writing, decisions, and editing to different model interfaces."><img src="assets/diffusion-language-models-for-agents/model-shapes.svg" alt="An agent harness routes writing, decisions, and editing to different model interfaces." loading="lazy" /></div>
+<figcaption>Different operations suggest different interfaces. The four dLLM roles include concrete drafting, decision, and infilling precedents, alongside the memory-maintenance proposal explored here.</figcaption>
+</figure>
+
+<h2 id="diffusion-models-as-fast-draft-models">Diffusion models as fast draft models</h2>
+
+<p>The most obvious use is speculative generation.</p>
+
+<p>An autoregressive model has an inconvenient property for drafting: even if I only need a rough proposal, I still have to generate it token by token.</p>
+
+<p>Masked diffusion models such as <a href="https://github.com/ML-GSAI/LLaDA">LLaDA</a> make a different interface concrete at LLM scale: predict masked positions using bidirectional context and reveal tokens over a sequence of denoising steps. Many positions can be predicted in parallel:</p>
+
+<div class="math-display">\[
+[\text{MASK},\text{MASK},\ldots,\text{MASK}]
+\rightarrow
+[x_1,x_2,\ldots,x_n].
+\]</div>
+
+<p>This suggests a natural division of labor:</p>
+
+<div class="math-display">\[
+\text{fast diffusion drafter}
+\rightarrow
+\text{strong AR verifier/refiner}.
+\]</div>
+
+<p>Recent work such as <a href="https://aclanthology.org/2026.findings-acl.1048/">DiffuSpec</a> already explores this direction, using a diffusion LM as a parallel speculative drafter for an AR verifier. It reports up to 3× wall-clock speedup in its evaluated settings; that is evidence for drafting, not a measured speedup for the agent architecture proposed here.</p>
+
+<p>For agents, this seems particularly interesting because many intermediate generations do not need to be perfect. A harness may only need a candidate command, short plan, query, tool argument, or next action that a stronger model or external environment can cheaply check.</p>
+
+<p>The model does not always need to finish the thought. Sometimes it only needs to propose something worth checking. The speed advantage depends on how many denoising steps are needed and how often the verifier accepts the proposal.</p>
+
+<h2 id="diffusion-models-as-jev-like-decision-models">Diffusion models as Jev-like decision models</h2>
+
+<p>There is another, slightly stranger possibility.</p>
+
+<p>Suppose an agent reaches a state \(s\) with a set of possible actions</p>
+
+<div class="math-display">\[
+\mathcal A(s)=\{a_1,\ldots,a_K\}.
+\]</div>
+
+<p>We normally serialize this into text, ask an LLM something like</p>
+
+<blockquote><p>Which action should I take?</p></blockquote>
+
+<p>and autoregressively generate an answer.</p>
+
+<p>But this is not fundamentally a text-generation problem. It is a decision problem.</p>
+
+<p>Jev makes this explicit by changing the model interface.</p>
+
+<p>A diffusion model might occupy an interesting middle ground. Instead of generating an unrestricted continuation, we could construct a small partially masked object representing the decision:</p>
+
+<pre><code class="language-text">state: ...
+actions:
+  0: click(search)
+  1: open(result_3)
+  2: think
+  3: ask_user
+
+decision: [MASK]
+confidence: [MASK]</code></pre>
+
+<p>and ask the model to resolve only the uncertain variables.</p>
+
+<p>More generally, the output could contain several related decisions:</p>
+
+<pre><code class="language-json">{
+  "action": "&lt;MASK&gt;",
+  "should_think": "&lt;MASK&gt;",
+  "should_verify": "&lt;MASK&gt;",
+  "risk": "&lt;MASK&gt;"
+}</code></pre>
+
+<p>These fields need not be generated sequentially: their answer slots can be evaluated in parallel using the same state and surrounding structure. With iterative refinement, filled slots can also provide context for later updates.</p>
+
+<p>That is a different computational shape from both an AR language model and a pure classifier.</p>
+
+<p>There is already a concrete implementation of this idea. In <a href="https://medium.com/google-cloud/how-to-build-a-jev-style-classifier-with-diffusiongemma-and-vllm-ef2e0bfa9ad7">How to build a Jev-style classifier with DiffusionGemma and vLLM</a>, Karl Weinmeister describes seeding a small canvas with JSON syntax, masking only the answer slots, and reading their log-probabilities after one denoising pass. A proxy normalizes those probabilities over allowed choices. His incident-triage example evaluates urgency, team ownership, and severity in parallel, making the output directly usable by software.</p>
+
+<p>This is a useful precedent for the decision interface, rather than just an architectural possibility. Reading answer-slot probabilities also differs from generating a textual confidence field. How well this approach matches Jev across tasks on latency and calibration remains an empirical question.</p>
+
+<h2 id="diffusion-models-as-structured-infillers">Diffusion models as structured infillers</h2>
+
+<p>Structured infilling may be the use case I find most interesting. Agent harnesses manipulate structured state constantly.</p>
+
+<p>JSON:</p>
+
+<pre><code class="language-json">{
+  "tool": "search",
+  "query": "&lt;MASK&gt;",
+  "top_k": 5,
+  "reason": "&lt;MASK&gt;"
+}</code></pre>
+
+<p>Code:</p>
+
+<pre><code class="language-python">request = SearchRequest(
+    query=???,
+    filters=???,
+    limit=10,
+)</code></pre>
+
+<p>Plans:</p>
+
+<pre><code class="language-text">Goal: fix failing test
+
+Hypothesis: &lt;MASK&gt;
+File to inspect: &lt;MASK&gt;
+Next action: &lt;MASK&gt;
+Expected result: &lt;MASK&gt;</code></pre>
+
+<p>Memory:</p>
+
+<pre><code class="language-text">user_preference: ...
+current_goal: ...
+unresolved_question: &lt;MASK&gt;
+next_step: &lt;MASK&gt;</code></pre>
+
+<p>These are strings with structure, but they are also <strong>partially observed objects</strong>: the harness already knows some fields and needs to resolve the rest. A diffusion model offers a natural interface for that operation.</p>
+
+<p>The harness already knows most of the answer. Instead of asking</p>
+
+<div class="math-display">\[
+p(x_{t+1}\mid x_{\leq t}),
+\]</div>
+
+<p>the actual problem is closer to</p>
+
+<div class="math-display">\[
+p(x_{\text{missing}}\mid x_{\text{observed}}).
+\]</div>
+
+<p>That is exactly the shape of an infilling problem.</p>
+
+<p>And because a masked diffusion LM has bidirectional context, a hole can condition on fields both before and after it. Multiple holes may also be filled or revised together rather than being committed to in an arbitrary left-to-right order.</p>
+
+<p><a href="https://github.com/DreamLM/DreamOn">DreamOn</a> supplies a concrete precedent in code infilling: it allows the masked region to expand or contract during inference, addressing the fact that a missing program fragment rarely has a known token length. Extending that interface to agent state is the step I am proposing here. Bidirectional conditioning does not itself guarantee valid JSON, consistent fields, or correct content; a harness still needs schema validation and task-specific checks.</p>
+
+<figure class="post-figure shape-figure">
+<div class="shape-figure-scroll" tabindex="0" role="region" aria-label="A diffusion model fills several missing fields in a debugging state while preserving the known goal."><img src="assets/diffusion-language-models-for-agents/structured-infilling.svg" alt="A diffusion model fills several missing fields in a debugging state while preserving the known goal." loading="lazy" /></div>
+<figcaption>Structured state as a partially observed object. The filled values are illustrative; a generated confidence value is not automatically a calibrated probability.</figcaption>
+</figure>
+
+<h2 id="diffusion-models-as-continuous-context-updaters">Diffusion models as continuous context updaters</h2>
+
+<p>There is another place where the computational shape of diffusion language models seems unusually well matched to agents: <strong>context management</strong>.</p>
+
+<p>Zhang connects the decoder-only interface to growing trajectories and periodic compaction. This is already an implementation concern: <a href="https://learn.microsoft.com/agent-framework/agents/harness">Microsoft’s Agent Framework harness</a> includes conversation persistence, context providers, and optional compaction. A common collection pattern appends each interaction to the history:</p>
+
+<div class="math-display">\[
+C_{t+1} = C_t \,\Vert\, o_{t+1},
+\]</div>
+
+<p>where each new observation, tool result, and reasoning step is appended to everything that came before.</p>
+
+<p>Eventually the context becomes too long, noisy, or expensive. The harness then performs a separate compaction step:</p>
+
+<div class="math-display">\[
+C_{1:t}
+\rightarrow
+\tilde C_t,
+\]</div>
+
+<p>usually by asking another autoregressive model to summarize the history.</p>
+
+<figure class="post-figure shape-figure">
+<div class="shape-figure-scroll" tabindex="0" role="region" aria-label="Append-and-compact history compared with a proposed diffusion-maintained working context and separate trajectory archive."><img src="assets/diffusion-language-models-for-agents/working-memory.svg" alt="Append-and-compact history compared with a proposed diffusion-maintained working context and separate trajectory archive." loading="lazy" /></div>
+<figcaption>The proposal separates working context from archival history. New observations revise what the reasoning model sees; the complete trajectory remains available for retrieval. This organization is also possible with AR models—the question is whether a diffusion updater offers a better cost–quality tradeoff.</figcaption>
+</figure>
+
+<p>But an agent does not necessarily need its memory to be an immutable transcript.</p>
+
+<p>What it really needs is a compact representation of <strong>what matters now</strong>.</p>
+
+<p>A diffusion language model suggests a different abstraction: treat the context itself as an editable object.</p>
+
+<p>At every interaction step,</p>
+
+<div class="math-display">\[
+(C_t, o_{t+1})
+\rightarrow
+C_{t+1},
+\]</div>
+
+<p>where \(C_{t+1}\) is not obtained by simply appending \(o_{t+1}\), but by updating the existing context.</p>
+
+<p>For example:</p>
+
+<pre><code class="language-text">Goal:
+Fix the authentication bug.
+
+Current hypothesis:
+The JWT expiration check is incorrect.
+
+Relevant evidence:
+- test_auth_expired fails
+- &lt;MASK&gt;
+
+Files of interest:
+- auth.py
+- &lt;MASK&gt;
+
+Resolved:
+- database connection is unrelated
+
+Next step:
+&lt;MASK&gt;</code></pre>
+
+<p>After a new tool result arrives, the model can directly revise this state:</p>
+
+<pre><code class="language-text">Goal:
+Fix the authentication bug.
+
+Current hypothesis:
+Timezone conversion causes expired JWTs to appear valid.
+
+Relevant evidence:
+- test_auth_expired fails
+- decode_token() compares naive and UTC timestamps
+
+Files of interest:
+- auth.py
+- token.py
+
+Resolved:
+- database connection is unrelated
+
+Next step:
+Inspect timestamp conversion in decode_token().</code></pre>
+
+<p>The model would be maintaining a living agent state, revising its current beliefs as evidence arrives rather than periodically summarizing a growing transcript.</p>
+
+<h3 id="masked-diffusion-forget-and-regenerate">Masked diffusion: forget and regenerate</h3>
+
+<p>Mask-and-reconstruct is a useful interface, but iterative revision is not an unconditional property of masked diffusion. Standard absorbing-mask samplers commonly leave revealed tokens committed. <a href="https://arxiv.org/abs/2503.00307">ReMDM</a> introduces a principled remasking sampler; <a href="https://arxiv.org/abs/2509.23653">RemeDi</a> learns to revisit low-confidence tokens and resample them with richer context. These methods provide mechanisms for the operation:</p>
+
+<div class="math-display">\[
+x_i \rightarrow [\mathrm{MASK}] \rightarrow x_i'.
+\]</div>
+
+<p>With a suitable infilling or remasking procedure, a harness could invalidate an outdated hypothesis and reconstruct it using the latest evidence. The selection of stale spans is part of the proposed system; the cited methods do not by themselves establish a working agent-memory updater.</p>
+
+<p>For example:</p>
+
+<pre><code class="language-text">Current hypothesis:
+[MASK]</code></pre>
+
+<p>can be regenerated after receiving new evidence.</p>
+
+<p>This gives the harness an explicit mechanism for invalidating stale beliefs rather than continuing to carry them forward forever.</p>
+
+<h3 id="uniform-diffusion-directly-revise">Uniform diffusion: directly revise</h3>
+
+<p><a href="https://arxiv.org/abs/2607.24507">UNIFUSION</a> studies uniform-noise diffusion, in which tokens remain editable during sampling rather than only transitioning out of a distinguished mask state. This supports a different editing primitive:</p>
+
+<div class="math-display">\[
+x_i \rightarrow x_i'.
+\]</div>
+
+<p>The intended operation would be an in-place revision:</p>
+
+<pre><code class="language-text">"bug is probably in database.py"</code></pre>
+
+<p>becomes</p>
+
+<pre><code class="language-text">"bug is probably in auth.py"</code></pre>
+
+<p>within the evolving sequence. This is a sampling property, not yet an agent-memory result: reliably preserving facts while replacing stale beliefs would require a suitable objective and editing procedure.</p>
+
+<figure class="post-figure shape-figure">
+<div class="shape-figure-scroll" tabindex="0" role="region" aria-label="AR continuation appends a correction, remasking reconstructs an invalidated span, and uniform diffusion permits replacement during sampling."><img src="assets/diffusion-language-models-for-agents/editable-state.svg" alt="AR continuation appends a correction, remasking reconstructs an invalidated span, and uniform diffusion permits replacement during sampling." loading="lazy" /></div>
+<figcaption>Three schematic interfaces. AR models can also generate patches when a harness applies them; the contrast here concerns the native generation process. Masked revision explicitly assumes a remasking procedure.</figcaption>
+</figure>
+
+<p>In this view, diffusion is not just a generation procedure. It becomes a mechanism for <strong>state maintenance</strong>.</p>
+
+<h3 id="from-context-windows-to-working-memory">From context windows to working memory</h3>
+
+<p>This changes how we might think about an agent's context.</p>
+
+<p>Instead of:</p>
+
+<div class="math-display">\[
+\text{context} = \text{conversation transcript},
+\]</div>
+
+<p>we can use:</p>
+
+<div class="math-display">\[
+\text{context} = \text{continuously updated working memory}.
+\]</div>
+
+<p>The full trajectory can still be stored externally for audit or retrieval. But the reasoning model does not need to reread the entire trajectory at every step.</p>
+
+<p>It receives a small, continuously maintained state containing things such as:</p>
+
+<pre><code class="language-json">{
+  "goal": "...",
+  "current_plan": "...",
+  "known_facts": [...],
+  "open_questions": [...],
+  "failed_attempts": [...],
+  "relevant_files": [...],
+  "next_action": "..."
+}</code></pre>
+
+<p>After each environment interaction, a diffusion model could update the fields that need to change. Selective edits would not necessarily mean selective computation; the latency benefit would depend on the model and serving implementation.</p>
+
+<p>The expensive reasoning model then operates on this compact state.</p>
+
+<p>This seems especially attractive because context maintenance happens at every agent step. Even a relatively small reduction in its cost could matter substantially over long trajectories.</p>
+
+<p>And it highlights another difference in model shape.</p>
+
+<p>An autoregressive model naturally asks:</p>
+
+<blockquote><p>What should come after this context?</p></blockquote>
+
+<p>A diffusion model can naturally ask:</p>
+
+<blockquote><p>Given what I know now, what should this context become?</p></blockquote>
+
+<p>For long-running agents, the second question may be just as important as the first. The hard part is deciding what may change. A useful updater should preserve the user’s goal and verified evidence, distinguish hypotheses from facts, and retain pointers to the observations behind its claims. Otherwise, a compact memory can quietly turn a tentative guess into a durable error.</p>
+
+<p>I would test this with a fixed reasoning model and the same tasks, comparing append-and-compact, an AR state editor, and a diffusion state editor. The relevant measurements are task success, total latency and compute—including update calls—along with lost facts, stale beliefs, and successful retrieval from the archive. Infilling quality alone would not demonstrate a better agent. Continuous editing is attractive precisely because it is frequent; that also means small errors or unnecessary update costs can accumulate.</p>
+
+<h2 id="a-different-way-to-think-about-the-agent-stack">A different way to think about the agent stack</h2>
+
+<p>One possible future agent architecture might therefore not contain <strong>one language model</strong>.</p>
+
+<p>The harness could route bounded choices to a decision model, drafting and state edits to a diffusion model, and difficult planning or recovery to a strong reasoning model. The working context would be their shared interface, with the full trajectory stored separately.</p>
+
+<p>The large autoregressive model does what it is unusually good at: long-horizon reasoning, open-ended generation, planning, and recovery from difficult situations.</p>
+
+<p>Smaller specialized models handle the enormous number of cheap operations surrounding it.</p>
+
+<p>Jev asks:</p>
+
+<blockquote><p>What if a language model were shaped like a decision function?</p></blockquote>
+
+<p>Diffusion language models suggest another question:</p>
+
+<blockquote><p>What if a language model were shaped like an editable workspace?</p></blockquote>
+
+<p>That workspace can be initialized with a draft, partially masked, constrained by a schema, revised, or handed to another model.</p>
+
+<p>This is a substantially different interface from <code>prompt → completion</code>.</p>
+
+<h2 id="the-interesting-question-is-not-ar-vs-diffusion">The interesting question is not AR vs. diffusion</h2>
+
+<p>A lot of discussion around diffusion language models asks whether they will replace autoregressive models.</p>
+
+<p>I increasingly think this may be the wrong question.</p>
+
+<p>Autoregressive decoding is an excellent shape for <strong>writing something from scratch</strong>.</p>
+
+<p>Decision models are an excellent shape for <strong>choosing among known alternatives</strong>.</p>
+
+<p>Diffusion models may be an excellent shape for <strong>completing and revising partially specified objects</strong>.</p>
+
+<p>An agent harness needs all three operations. Whether specialized models make them cheaper and more reliable is something to measure end to end.</p>
+
+<p>The interesting research direction, then, may not be finding the single architecture that replaces the Transformer decoder.</p>
+
+<p>It may be figuring out which <strong>model shapes correspond to the computational primitives of an agent</strong>, and designing the harness and models together.</p>
+
+<p>The resulting division of labor is a set of design hypotheses, not a claim that each operation has a single winning architecture:</p>
+<div class="table-wrap">
+<table>
+<caption>Matching model interfaces to harness operations</caption>
+<thead><tr><th scope="col">Operation</th><th scope="col">Candidate model shape</th><th scope="col">Example</th></tr></thead>
+<tbody>
+<tr><th scope="row">Write open-ended content</th><td>AR LM</td><td>Plans and explanations</td></tr>
+<tr><th scope="row">Make bounded decisions</th><td>Decision model</td><td>Jev</td></tr>
+<tr><th scope="row">Produce cheap proposals</th><td>Parallel dLLM</td><td>DiffuSpec</td></tr>
+<tr><th scope="row">Fill structured holes</th><td>Infilling dLLM</td><td>DreamOn; proposed JSON and state infilling</td></tr>
+<tr><th scope="row">Maintain working context</th><td>Editable dLLM</td><td>The proposal in this post</td></tr>
+<tr><th scope="row">Deep reasoning and recovery</th><td>Strong AR LM</td><td>Difficult planning and repair</td></tr>
+</tbody></table>
+</div>
+<p>An agent may benefit from a heterogeneous set of models whose interfaces match the operations inside its harness. Structured infilling and continuously editable context are the part of that design space I would most like to explore.</p>
+
+<p>We spent the last few years wrapping increasingly complicated software around models shaped like writers.</p>
+
+<p>Maybe the next step is to build models shaped like the software that actually uses them.</p>
+        </div>
+
+        <a class="back-link" href="./">← All posts</a>
+      </article>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Minghui Liu</p>
+  </footer>
+  <script src="../script.js"></script>
+  <script data-goatcounter="https://mliu.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
