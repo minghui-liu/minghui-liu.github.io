@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Books Minghui Liu is currently reading and has read." />
+  <title>Readings · Minghui Liu</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="page-header">
+    <nav class="site-nav" aria-label="Primary navigation">
+      <a href="./">Home</a>
+      <a href="blog/">Blog</a>
+    </nav>
+    <h1 class="page-title">Readings</h1>
+    <p class="page-description">Books I am reading and have finished, synced from <a href="https://literal.club/minghuiliu">Literal</a>.</p>
+  </header>
+
+  <main class="reading-page" data-literal-profile-id="cmuysdmnf21842657t5ferc9cz6">
+    <section class="block reading-section" aria-labelledby="currently-reading-heading">
+      <div class="reading-section__header">
+        <h2 id="currently-reading-heading">Currently reading</h2>
+        <span class="reading-count" id="current-count" aria-live="polite"></span>
+      </div>
+      <div class="book-grid" id="current-books" aria-live="polite" aria-busy="true">
+        <p class="reading-status">Loading books from Literal…</p>
+      </div>
+    </section>
+
+    <section class="block reading-section" aria-labelledby="read-heading">
+      <div class="reading-section__header">
+        <h2 id="read-heading">Read</h2>
+        <span class="reading-count" id="finished-count" aria-live="polite"></span>
+      </div>
+      <div class="book-grid" id="finished-books" aria-live="polite" aria-busy="true">
+        <p class="reading-status">Loading books from Literal…</p>
+      </div>
+    </section>
+
+    <noscript><p class="reading-notice">JavaScript is required to load the public reading lists from Literal.</p></noscript>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="year"></span> Minghui Liu · Reading data from <a href="https://literal.club/minghuiliu">Literal</a></p>
+  </footer>
+  <script src="script.js"></script>
+  <script src="readings.js"></script>
+  <script data-goatcounter="https://mliu.goatcounter.com/count"
+          async src="//gc.zgo.at/count.js"></script>
+</body>
+</html>
