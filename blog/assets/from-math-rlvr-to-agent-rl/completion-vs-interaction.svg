@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="430" viewBox="0 0 960 430" role="img" aria-labelledby="title desc">
+  <title id="title">From a completion to an interaction</title>
+  <desc id="desc">Math RLVR maps a prompt through one completion to a verifier reward. Agent RL alternates actions and observations before receiving a task reward.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#687078"/>
+    </marker>
+    <style>
+      .label{font:600 21px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#17181a}
+      .text{font:500 16px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#2f3438}
+      .small{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#626970}
+      .box{fill:#fff;stroke:#cfd3d6;stroke-width:1.5}
+      .policy{fill:#edf4f8;stroke:#9fb9ca;stroke-width:1.5}
+      .env{fill:#f4f2ed;stroke:#bbb5a8;stroke-width:1.5}
+      .reward{fill:#eef5ef;stroke:#9db6a1;stroke-width:1.5}
+      .line{stroke:#687078;stroke-width:1.7;fill:none;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect width="960" height="430" rx="18" fill="#fafaf9"/>
+  <text x="45" y="50" class="label">Math RLVR</text>
+  <text x="45" y="78" class="small">One context grows until the answer is complete.</text>
+  <rect x="55" y="110" width="160" height="70" rx="12" class="box"/>
+  <text x="135" y="151" text-anchor="middle" class="text">Prompt</text>
+  <path d="M215 145 H305" class="line"/>
+  <rect x="310" y="110" width="220" height="70" rx="12" class="policy"/>
+  <text x="420" y="140" text-anchor="middle" class="text">Completion</text>
+  <text x="420" y="163" text-anchor="middle" class="small">token → token → token</text>
+  <path d="M530 145 H620" class="line"/>
+  <rect x="625" y="110" width="160" height="70" rx="12" class="reward"/>
+  <text x="705" y="140" text-anchor="middle" class="text">Verifier</text>
+  <text x="705" y="163" text-anchor="middle" class="small">reward</text>
+  <line x1="45" y1="218" x2="915" y2="218" stroke="#dedfdd"/>
+  <text x="45" y="265" class="label">Agent RL</text>
+  <text x="45" y="293" class="small">Each action changes what the policy sees next.</text>
+  <rect x="55" y="325" width="135" height="62" rx="12" class="box"/>
+  <text x="122" y="362" text-anchor="middle" class="text">Task</text>
+  <path d="M190 356 H245" class="line"/>
+  <rect x="250" y="325" width="135" height="62" rx="12" class="policy"/>
+  <text x="317" y="351" text-anchor="middle" class="text">Action 1</text>
+  <text x="317" y="374" text-anchor="middle" class="small">policy</text>
+  <path d="M385 356 H440" class="line"/>
+  <rect x="445" y="325" width="135" height="62" rx="12" class="env"/>
+  <text x="512" y="351" text-anchor="middle" class="text">Observation</text>
+  <text x="512" y="374" text-anchor="middle" class="small">environment</text>
+  <path d="M580 356 H635" class="line"/>
+  <rect x="640" y="325" width="135" height="62" rx="12" class="policy"/>
+  <text x="707" y="351" text-anchor="middle" class="text">Action 2</text>
+  <text x="707" y="374" text-anchor="middle" class="small">policy</text>
+  <path d="M775 356 H820" class="line"/>
+  <rect x="825" y="325" width="90" height="62" rx="12" class="reward"/>
+  <text x="870" y="351" text-anchor="middle" class="text">Task</text>
+  <text x="870" y="374" text-anchor="middle" class="small">reward</text>
+</svg>

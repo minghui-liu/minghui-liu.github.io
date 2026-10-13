@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="470" viewBox="0 0 960 470" role="img" aria-labelledby="title desc">
+  <title id="title">Three resolutions of credit assignment</title>
+  <desc id="desc">Trajectory credit gives every turn the same terminal signal, turn credit distinguishes actions, and token credit distinguishes tokens inside each action.</desc>
+  <defs>
+    <style>
+      .heading{font:600 20px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#17181a}
+      .text{font:500 15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#303438}
+      .small{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#626970}
+      .outline{fill:#fff;stroke:#d2d5d7;stroke-width:1.5}
+      .good{fill:#dfeee2;stroke:#8daf94;stroke-width:1.4}
+      .bad{fill:#f3e4e2;stroke:#c09892;stroke-width:1.4}
+      .neutral{fill:#e8eef2;stroke:#9db0bc;stroke-width:1.4}
+    </style>
+  </defs>
+  <rect width="960" height="470" rx="18" fill="#fafaf9"/>
+  <text x="45" y="48" class="heading">One successful trajectory, three possible learning signals</text>
+
+  <text x="45" y="105" class="heading">Trajectory</text>
+  <text x="45" y="129" class="small">One terminal reward is broadcast everywhere.</text>
+  <rect x="350" y="82" width="160" height="62" rx="11" class="good"/>
+  <text x="430" y="109" text-anchor="middle" class="text">wrong click</text>
+  <text x="430" y="131" text-anchor="middle" class="small">same positive credit</text>
+  <rect x="530" y="82" width="160" height="62" rx="11" class="good"/>
+  <text x="610" y="109" text-anchor="middle" class="text">go back</text>
+  <text x="610" y="131" text-anchor="middle" class="small">same positive credit</text>
+  <rect x="710" y="82" width="160" height="62" rx="11" class="good"/>
+  <text x="790" y="109" text-anchor="middle" class="text">buy item</text>
+  <text x="790" y="131" text-anchor="middle" class="small">same positive credit</text>
+
+  <line x1="45" y1="174" x2="915" y2="174" stroke="#dedfdd"/>
+  <text x="45" y="225" class="heading">Turn</text>
+  <text x="45" y="249" class="small">Different actions can receive different credit.</text>
+  <rect x="350" y="202" width="160" height="62" rx="11" class="bad"/>
+  <text x="430" y="229" text-anchor="middle" class="text">wrong click</text>
+  <text x="430" y="251" text-anchor="middle" class="small">value ↓</text>
+  <rect x="530" y="202" width="160" height="62" rx="11" class="good"/>
+  <text x="610" y="229" text-anchor="middle" class="text">go back</text>
+  <text x="610" y="251" text-anchor="middle" class="small">value ↑</text>
+  <rect x="710" y="202" width="160" height="62" rx="11" class="good"/>
+  <text x="790" y="229" text-anchor="middle" class="text">buy item</text>
+  <text x="790" y="251" text-anchor="middle" class="small">value ↑</text>
+
+  <line x1="45" y1="294" x2="915" y2="294" stroke="#dedfdd"/>
+  <text x="45" y="345" class="heading">Token</text>
+  <text x="45" y="369" class="small">Credit can vary inside the generated tool call.</text>
+  <rect x="350" y="322" width="520" height="92" rx="11" class="outline"/>
+  <rect x="372" y="345" width="92" height="44" rx="8" class="neutral"/>
+  <text x="418" y="373" text-anchor="middle" class="text">search</text>
+  <rect x="473" y="345" width="65" height="44" rx="8" class="neutral"/>
+  <text x="505" y="373" text-anchor="middle" class="text">["</text>
+  <rect x="547" y="345" width="118" height="44" rx="8" class="good"/>
+  <text x="606" y="373" text-anchor="middle" class="text">red hiking</text>
+  <rect x="674" y="345" width="118" height="44" rx="8" class="bad"/>
+  <text x="733" y="373" text-anchor="middle" class="text">expensive</text>
+  <rect x="801" y="345" width="47" height="44" rx="8" class="neutral"/>
+  <text x="824" y="373" text-anchor="middle" class="text">"]</text>
+  <text x="610" y="443" text-anchor="middle" class="small">Finer resolution  →  more value estimates to learn</text>
+</svg>

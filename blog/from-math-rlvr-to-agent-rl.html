@@ -51,9 +51,9 @@
 </nav>
 </details>
 
-<p>Training a language model to use tools can look like a large jump from training it to solve math problems. The model now has to search, inspect results, choose an action, and deal with whatever happens next. Yet if you already understand reinforcement learning with verifiable rewards (RLVR), much of the learning algorithm carries over. The less familiar part is the environment around it.</p>
+<p>Training a language model to use tools can look like a large jump from training it to solve math problems. The model now has to search, inspect results, choose an action, and deal with whatever happens next. Coming from math RLVR, I found that much of the learning algorithm carried over. What felt less familiar was the environment around it.</p>
 
-<p>This post develops that connection from the ground up. We will start with the token-level MDP behind math RLVR, replace a completion with an interactive trajectory, and follow the consequences for credit assignment and rollout collection. A shopping task will serve as a running example. It is simple enough to keep the mechanics visible, but already exposes problems that also arise in browser, coding, and simulator agents.</p>
+<p>This post collects what I learned while making that transition. I start with the token-level MDP behind math RLVR, replace a completion with an interactive trajectory, and follow the consequences for credit assignment and rollout collection. A shopping task serves as a running example. It is simple enough to keep the mechanics visible, but already exposes problems that also arise in browser, coding, and simulator agents.</p>
 
 <h2 id="math-rlvr-as-an-mdp">The convenient environment behind math RLVR</h2>
 
@@ -107,6 +107,11 @@ a_t\sim\pi_\theta(\cdot\mid h_t),
 \]</div>
 
 <p>There are two transitions to account for. Tokens extend the current action prefix; a completed action is then executed in the environment. The latter may involve hidden state, stochastic outcomes, and external latency. Even a deterministic simulator requires maintaining and advancing an environment instance for each rollout.</p>
+
+<figure class="post-figure post-figure--wide">
+  <img src="assets/from-math-rlvr-to-agent-rl/completion-vs-interaction.svg" alt="Comparison between math RLVR, where one prompt produces one completion and a verifier reward, and agent RL, where actions and environment observations alternate before a terminal reward." />
+  <figcaption>A completion grows inside one fixed context, while an agent trajectory repeatedly changes the context through the environment.</figcaption>
+</figure>
 
 <p>It helps to distinguish the true environment state \(s_t^{\mathrm{env}}\), the observable history \(h_t\), and the context \(c_t=f(h_t)\) actually passed to the model. An agent may see only part of a webpage or a summary of earlier turns. Its policy is then \(\pi_\theta(a_t\mid c_t)\). Below, state-value notation refers to the history unless stated otherwise; a shortened context need not retain all the information needed to predict what happens next.</p>
 
@@ -188,6 +193,11 @@ Q^\pi_{\mathrm{token}}\big((h_t,w_{t,&lt;L_t}),w_{t,L_t}\big)
 
 <p>Monte Carlo branching is only one route to denser feedback. A process reward model can score useful searches, invalid actions, or repetition; an environment can expose intermediate completion signals; hindsight analysis can help distinguish an early useful action from a later failure. Each introduces assumptions about what deserves credit. Learned rewards can be exploited, and engineered progress rewards can change the objective if they reward behavior that does not ultimately help complete the task.</p>
 
+<figure class="post-figure post-figure--wide">
+  <img src="assets/from-math-rlvr-to-agent-rl/credit-resolution.svg" alt="Three levels of credit assignment: one terminal reward for a full trajectory, separate value changes for agent turns, and token-level values within a tool call." />
+  <figcaption>The same successful trajectory can be viewed at three resolutions. Finer credit is more informative, but it also requires more estimation.</figcaption>
+</figure>
+
 <h2 id="exploration-is-qualitatively-harder-for-agents">Exploration includes learning to recover</h2>
 
 <p>Sampling different math solutions explores different generated prefixes. Sampling agent actions also changes which external observations the model will encounter. Opening two different products creates two different opportunities for the next decision. Deleting a file or submitting a form may remove the possibility of returning to the previous state. Both the policy and the environment determine the resulting trajectory tree.</p>
@@ -229,6 +239,11 @@ Q^\pi_{\mathrm{token}}\big((h_t,w_{t,&lt;L_t}),w_{t,L_t}\big)
 <p>Termination deserves care. Success, task failure, and a collection timeout are different events. If collection stops at a time limit while the underlying task could continue, value estimation may need to bootstrap from the last state. If the task itself defines exceeding the turn budget as failure, that is a terminal outcome. Treating both cases identically can distort the critic’s targets.</p>
 
 <p>At scale, a rollout manager distributes tasks to policy and environment workers. Their trajectories enter a buffer, reward and value computation produce advantages, and a learner updates the policy. New weights then return to the rollout workers. The data flow is straightforward; keeping every stage supplied with useful work is harder.</p>
+
+<figure class="post-figure post-figure--wide">
+  <img src="assets/from-math-rlvr-to-agent-rl/rollout-training-loop.svg" alt="Agent RL system loop connecting task queue, policy workers, environment workers, trajectory buffer, reward and value computation, learner, and updated weights." />
+  <figcaption>Once environment interaction enters the loop, data collection and policy optimization can no longer be treated as separate implementation details.</figcaption>
+</figure>
 
 <p>Suppose each turn takes two seconds of model inference and one second of environment interaction. A 20-turn episode takes about a minute, and a GRPO group of 16 episodes requires 320 model–environment interactions. Parallelism reduces wall-clock time, but it still requires enough independent environments and inference capacity. Resetting a browser, serializing simulator state, or waiting for a tool can become a substantial part of collection cost.</p>
 
