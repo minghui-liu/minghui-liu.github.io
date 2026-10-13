@@ -39,13 +39,13 @@
       </p>
     </div>
     <p class="profile__links">
-      <a href="data/mliu-cv.pdf">CV</a>
-      <span aria-hidden="true">·</span>
       <a href="https://scholar.google.com/citations?user=UKAsIsUAAAAJ&hl=en">Google Scholar</a>
       <span aria-hidden="true">·</span>
       <a href="https://github.com/minghui-liu/">Github</a>
       <span aria-hidden="true">·</span>
       <a href="https://twitter.com/minghuiliu95">Twitter/X</a>
+      <span aria-hidden="true">·</span>
+      <a href="data/mliu-cv.pdf">CV</a>
     </p>
   </header>
 
@@ -53,31 +53,31 @@
     <section class="block" id="interests">
       <div class="block__header">
         <h2>Research Interests</h2>
-        <button class="btn-ghost" data-toggle="interests">Collapse</button>
+        <button class="btn-ghost section-toggle" data-toggle="interests" aria-expanded="true" aria-label="Collapse Research Interests">−</button>
       </div>
       <div data-section="interests">
         <p class="research-intro">I am interested in the full path from teaching a model a capability to making that capability useful in practice. My current work centers on four connected questions:</p>
         <div class="research-areas">
-          <article class="research-area">
-            <h3>Reasoning &amp; post-training</h3>
+          <details class="research-area">
+            <summary>Reasoning &amp; post-training</summary>
             <p>How can we improve reasoning without relying only on larger models? I study training signals that meet a model at its current level, including adaptive curricula, on-policy self-distillation, and reinforcement learning.</p>
             <p class="research-area__works">Related work: <a href="https://minghui-liu.github.io/ladders_of_thought/">Ladders of Thought</a>, <a href="https://umd-huang-lab.github.io/beta-opsd/">β-OPSD</a></p>
-          </article>
-          <article class="research-area">
-            <h3>Learning agents</h3>
+          </details>
+          <details class="research-area">
+            <summary>Learning agents</summary>
             <p>I want agents to learn why an action is useful, not only imitate successful trajectories. This includes reflection, credit assignment, and reinforcement learning for long-horizon interaction.</p>
             <p class="research-area__works">Related work: <a href="https://attention-is-all-i-need.github.io/ACT/">Agentic Critical Training</a></p>
-          </article>
-          <article class="research-area">
-            <h3>Efficient inference</h3>
+          </details>
+          <details class="research-area">
+            <summary>Efficient inference</summary>
             <p>Reasoning and interaction can produce long contexts and long generations. I study how to reduce their memory and inference costs while preserving the information models need to solve a task.</p>
             <p class="research-area__works">Related work: <a href="https://arxiv.org/abs/2412.16187">HashEvict</a>, <a href="https://arxiv.org/abs/2512.12008">Hold Onto That Thought</a></p>
-          </article>
-          <article class="research-area">
-            <h3>Reliable evaluation</h3>
+          </details>
+          <details class="research-area">
+            <summary>Reliable evaluation</summary>
             <p>As models take on open-ended tasks, their judgments should remain diverse, calibrated, and methodologically sound. I build evaluations and interventions that expose failures before they become part of a feedback loop.</p>
             <p class="research-area__works">Related work: <a href="https://hosytuyen.github.io/projects/TrustReviewer/">TrustReviewer</a></p>
-          </article>
+          </details>
         </div>
         <p class="research-collaboration">Collaborations are always welcome; please feel free to <a href="mailto:minghui@umd.edu">email me</a> if you are interested in working together.</p>
       </div>
@@ -86,7 +86,7 @@
     <section class="block" id="news">
       <div class="block__header">
         <h2>News & Updates</h2>
-        <button class="btn-ghost" data-toggle="news">Collapse</button>
+        <button class="btn-ghost section-toggle" data-toggle="news" aria-expanded="true" aria-label="Collapse News &amp; Updates">−</button>
       </div>
       <ul class="timeline" data-section="news">
         <li>
@@ -111,7 +111,7 @@
     <section class="block" id="publications">
       <div class="block__header">
         <h2>Publications</h2>
-        <button class="btn-ghost" data-toggle="pubs">Collapse</button>
+        <button class="btn-ghost section-toggle" data-toggle="pubs" aria-expanded="true" aria-label="Collapse Publications">−</button>
       </div>
       <div class="filter-bar" aria-label="Filter publications by tag">
         <span class="filter-bar__label">Filter:</span>
@@ -368,15 +368,64 @@
       </div>
     </section>
 
-    <section class="block" id="academic-services">
-      <h2>Academic Services</h2>
-      <ul class="list-plain">
-        <li>Reviewer, ICLR 2027</li>
-        <li>Reviewer, AAAI 2027</li>
-        <li>Gold Reviewer, ICML 2026 (awarded to top 20% of reviewers)</li>
-        <li>Reviewer, NeurIPS 2026</li>
-      </ul>
+    <section class="block" id="experience">
+      <h2>Experience</h2>
+      <div class="experience-list">
+        <article class="experience-item">
+          <p class="experience-date">Jun – Aug 2026</p>
+          <div>
+            <h3>Applied Research Intern</h3>
+            <p>Capital One · New York, NY</p>
+            <p class="experience-description">On-policy distillation, privileged information, and representation-level objectives.</p>
+          </div>
+        </article>
+        <article class="experience-item">
+          <p class="experience-date">Jun – Aug 2025</p>
+          <div>
+            <h3>Applied Research Intern</h3>
+            <p>Capital One · New York, NY</p>
+            <p class="experience-description">Adaptive curricula and reasoning in small language models.</p>
+          </div>
+        </article>
+        <article class="experience-item">
+          <p class="experience-date">Aug 2017 – Jan 2021</p>
+          <div>
+            <h3>HPC Software Engineer</h3>
+            <p>Altair Engineering · Sunnyvale, CA</p>
+            <p class="experience-description">OpenPBS scheduling, Docker support, and Linux build optimization.</p>
+          </div>
+        </article>
+      </div>
     </section>
+
+    <div class="background-grid">
+      <section class="block" id="education">
+        <h2>Education</h2>
+        <div class="education-list">
+          <article>
+            <h3>Ph.D. in Computer Science</h3>
+            <p>University of Maryland, College Park</p>
+            <p class="education-meta">Jan 2021 – Present · Advisor: Furong Huang</p>
+          </article>
+          <article>
+            <h3>B.S. in Computer Science</h3>
+            <p>Trinity College · Hartford, CT</p>
+            <p class="education-meta">Sep 2013 – May 2017</p>
+            <p class="education-meta">Summa cum laude with distinction · Phi Beta Kappa</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="block" id="academic-services">
+        <h2>Academic Services</h2>
+        <ul class="list-plain">
+          <li>Reviewer, ICLR 2027</li>
+          <li>Reviewer, AAAI 2027</li>
+          <li>Gold Reviewer, ICML 2026 (awarded to top 20% of reviewers)</li>
+          <li>Reviewer, NeurIPS 2026</li>
+        </ul>
+      </section>
+    </div>
 
     <section class="block" id="misc">
       <h2>Misc</h2>

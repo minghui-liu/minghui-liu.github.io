@@ -27,7 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       
-      btn.textContent = isHidden ? "Collapse" : "Expand";
+      btn.textContent = isHidden ? "−" : "+";
+      btn.setAttribute("aria-expanded", String(isHidden));
+      const heading = section.querySelector("h2")?.textContent || "section";
+      btn.setAttribute("aria-label", `${isHidden ? "Collapse" : "Expand"} ${heading}`);
     });
   });
 

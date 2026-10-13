@@ -775,11 +775,89 @@ main,
   padding-left: 30px;
 }
 
-.research-area h3 {
-  margin: 0 0 8px;
+.research-area summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -0.02em;
+}
+
+.research-area summary::-webkit-details-marker {
+  display: none;
+}
+
+.research-area summary::after {
+  content: "+";
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 400;
+}
+
+.research-area[open] summary::after {
+  content: "−";
+}
+
+.research-area summary:hover,
+.research-area summary:focus-visible {
+  color: var(--link-hover);
+}
+
+.research-area[open] summary {
+  margin-bottom: 12px;
+}
+
+.research-areas {
+  align-items: start;
+}
+
+.background-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.experience-list,
+.education-list {
+  display: grid;
+  gap: 26px;
+  margin-top: 24px;
+}
+
+.experience-item {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.experience-item h3,
+.education-list h3 {
+  margin: 0 0 5px;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.experience-item p,
+.education-list p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.experience-date,
+.experience-item .experience-description,
+.education-list .education-meta {
+  color: var(--muted);
+}
+
+.experience-item .experience-description,
+.education-list .education-meta {
+  margin-top: 7px;
+  font-size: 13px;
 }
 
 .research-area p {
@@ -852,6 +930,39 @@ main,
   border-color: var(--fg);
   background: var(--fg);
   color: #ffffff;
+}
+
+.section-toggle {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  font-size: 0;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.section-toggle::before,
+.section-toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.section-toggle::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.section-toggle[aria-expanded="true"]::after {
+  display: none;
 }
 
 .pub-list {
@@ -1452,6 +1563,15 @@ main,
 
   .research-areas {
     grid-template-columns: 1fr;
+  }
+
+  .background-grid,
+  .experience-item {
+    grid-template-columns: 1fr;
+  }
+
+  .experience-item {
+    gap: 6px;
   }
 
   .research-area,
