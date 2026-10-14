@@ -1403,6 +1403,36 @@ main,
 }
 
 /* Readings page. */
+.cat-gallery {
+  columns: 2;
+  column-gap: 20px;
+}
+
+.cat-photo {
+  display: block;
+  break-inside: avoid;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cat-photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cat-photo:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 4px;
+}
+
+@media (max-width: 600px) {
+  .cat-gallery {
+    columns: 1;
+  }
+}
+
 .reading-section__header {
   display: flex;
   align-items: baseline;
